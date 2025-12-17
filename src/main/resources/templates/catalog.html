@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Каталог</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .favorite-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            cursor: pointer;
+        }
+        .favorite-btn:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+        .product-card {
+            transition: transform 0.3s;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+        <a class="navbar-brand" href="/">🍷 Alcohol Store</a>
+
+        <div class="navbar-nav ms-auto">
+            <div sec:authorize="isAuthenticated()">
+                <div class="dropdown">
+                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-person-circle"></i>
+                        <span sec:authentication="name"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="/orders">Мои заказы</a></li>
+                        <li><a class="dropdown-item" href="/favorites">Избранное</a></li>
+                        <li sec:authorize="hasRole('ADMIN')">
+                            <a class="dropdown-item text-warning" href="/admin/dashboard">
+                                <i class="bi bi-shield-check"></i> Админ-панель
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/logout}" method="post" class="d-inline">
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="bi bi-box-arrow-right"></i> Выйти
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+                <a href="/cart" class="btn btn-outline-light ms-2">
+                    🛒 Корзина
+                </a>
+            </div>
+
+            <div sec:authorize="!isAuthenticated()">
+                <a href="/login" class="btn btn-outline-light me-2">Войти</a>
+                <a href="/register" class="btn btn-primary">Регистрация</a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-4">
+    <h1>Каталог напитков</h1>
+
+    <div class="row">
+        <div th:each="product : ${products}" class="col-md-4 mb-4">
+            <div class="card product-card h-100">
+                <div class="position-relative">
+                    <img th:src="${product.imageUrl}" class="card-img-top" style="height: 200px; object-fit: cover;">
+
+                    <!-- Кнопка избранного -->
+                    <button class="favorite-btn"
+                            data-product-id="${product.id}"
+                            onclick="toggleFavorite(this)">
+                        <i class="bi bi-heart"></i>
+                    </button>
+                </div>
+                <div class="card-body d-flex flex-column">
+                    <h5 th:text="${product.name}"></h5>
+                    <p class="card-text flex-grow-1" th:text="${product.description} ?: 'Нет описания'"></p>
+                    <p><strong th:text="${product.price} + ' ₽'"></strong></p>
+                    <div class="mt-auto">
+                        <form th:action="@{/cart/add/{id}(id=${product.id})}" method="post">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="btn btn-primary">В корзину</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Функция для переключения состояния избранного
+    function toggleFavorite(button) {
+        const productId = button.getAttribute('data-product-id');
+        const icon = button.querySelector('i');
+
+        // Проверяем текущее состояние
+        const isFavorite = icon.classList.contains('bi-heart-fill');
+
+        if (isFavorite) {
+            // Удаляем из избранного
+            fetch('/favorites/remove/' + productId, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (response.redirected) {
+                    window.location.href = '/login';
+                    return;
+                }
+                if (response.ok) {
+                    icon.classList.remove('bi-heart-fill', 'text-danger');
+                    icon.classList.add('bi-heart', 'text-muted');
+                } else {
+                    alert('Ошибка при удалении из избранного');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка');
+            });
+        } else {
+            // Добавляем в избранное (используем FormData)
+            const formData = new FormData();
+            formData.append('productId', productId);
+
+            fetch('/favorites/add', {
+                method: 'POST',
+                body: new URLSearchParams({
+                    'productId': productId
+                }),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+            })
+            .then(response => response.text())
+            .then(result => {
+                if (result === 'success') {
+                    icon.classList.remove('bi-heart', 'text-muted');
+                    icon.classList.add('bi-heart-fill', 'text-danger');
+                } else if (result.startsWith('error:not_logged_in')) {
+                    window.location.href = '/login';
+                } else {
+                    alert('Ошибка при добавлении в избранное');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Произошла ошибка соединения');
+            });
+        }
+    }
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        // Проверяем статус избранного для всех товаров на странице
+        const favoriteButtons = document.querySelectorAll('.favorite-btn');
+
+        favoriteButtons.forEach(button => {
+            const productId = button.getAttribute('data-product-id');
+            const icon = button.querySelector('i');
+
+            fetch('/favorites/check?productId=' + productId)
+                .then(response => response.text())
+                .then(status => {
+                    if (status === 'favorite') {
+                        icon.classList.remove('bi-heart', 'text-muted');
+                        icon.classList.add('bi-heart-fill', 'text-danger');
+                    } else if (status === 'not_favorite') {
+                        icon.classList.remove('bi-heart-fill', 'text-danger');
+                        icon.classList.add('bi-heart', 'text-muted');
+                    }
+                })
+                .catch(error => console.error('Error checking favorite:', error));
+        });
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

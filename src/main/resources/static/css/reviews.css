@@ -1,0 +1,39 @@
+/* Стили для звездного рейтинга */
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating input {
+    display: none;
+}
+
+.rating label {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #ddd;
+    padding: 0 2px;
+}
+
+.rating input:checked ~ label,
+.rating label:hover,
+.rating label:hover ~ label {
+    color: #ffc107;
+}
+
+.rating input:checked + label {
+    color: #ffc107;
+}
+
+/* Отображение рейтинга */
+.star-rating {
+    color: #ffc107;
+    font-size: 1.2rem;
+}
+
+/* Карточка отзыва */
+.review-card {
+    border-left: 4px solid #0d6efd;
+    background-color: #f8f9fa;
+}

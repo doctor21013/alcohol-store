@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Alcohol Store - Премиальный алкоголь</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<!-- Navbar -->
+<div th:replace="fragments/navbar :: navbar"></div>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>Добро пожаловать в Alcohol Store</h1>
+        <p>Откройте для себя мир премиальных алкогольных напитков. Широкий выбор, отборное качество.</p>
+        <a href="/catalog" class="cta-button">
+            <i class="fas fa-shopping-bag"></i> Перейти в каталог
+        </a>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+    <div class="features-container">
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-award"></i>
+            </div>
+            <h3>Гарантия качества</h3>
+            <p>Все товары имеют сертификаты качества</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-shipping-fast"></i>
+            </div>
+            <h3>Быстрая доставка</h3>
+            <p>Доставка по городу в течение 2 часов</p>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-headset"></i>
+            </div>
+            <h3>Поддержка 24/7</h3>
+            <p>Наши консультанты всегда готовы помочь</p>
+        </div>
+    </div>
+</section>
+
+<!-- Popular Products -->
+<section class="products">
+    <div class="section-header">
+        <h2 class="section-title">Популярные товары</h2>
+        <p class="section-subtitle">Самые востребованные напитки этой недели</p>
+    </div>
+
+    <div class="products-grid">
+        <div th:each="product : ${popularProducts}" class="product-card">
+            <img th:src="${product.imageUrl}" alt="Product" class="product-image">
+            <div class="product-content">
+                <h3 class="product-title" th:text="${product.name}"></h3>
+                <div class="product-price" th:text="${product.price} + ' ₽'"></div>
+                <a th:href="@{/product/{id}(id=${product.id})}" class="product-link">
+                    Подробнее <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="view-all-container">
+        <a href="/catalog" class="view-all-btn">
+            <i class="fas fa-store"></i> Смотреть весь каталог
+        </a>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h3>Alcohol Store</h3>
+            <p>Широкий выбор качественных алкогольных напитков</p>
+        </div>
+
+        <div class="footer-section">
+            <h3>Меню</h3>
+            <ul class="footer-links">
+                <li><a href="/">Главная</a></li>
+                <li><a href="/catalog">Каталог</a></li>
+                <li><a href="/about">О нас</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h3>Контакты</h3>
+            <ul class="footer-links">
+                <li><i class="fas fa-phone"></i> +7 (800) 555-35-35</li>
+                <li><i class="fas fa-envelope"></i> info@alcoholstore.ru</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="copyright">
+        <p>&copy; 2023 Alcohol Store. Все права защищены.</p>
+    </div>
+</footer>
+
+<script>
+    // Простой скрипт для анимации
+    document.addEventListener('DOMContentLoaded', function() {
+        // Анимация появления карточек
+        const cards = document.querySelectorAll('.feature-card, .product-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
+
+<style>
+    /* Небольшие inline стили для анимации */
+    .feature-card, .product-card {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+</style>
+</body>
+</html>
