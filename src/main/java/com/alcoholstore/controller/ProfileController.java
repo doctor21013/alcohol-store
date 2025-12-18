@@ -11,8 +11,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Optional;
-
 @Controller
 @RequestMapping("/profile")
 public class ProfileController {
@@ -29,13 +27,11 @@ public class ProfileController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
-        // Проверяем, что пользователь не анонимный
         if (username.equals("anonymousUser")) {
             return "redirect:/login";
         }
 
         User user = userRepository.findByUsername(username);
-
         if (user == null) {
             return "redirect:/login?error=user_not_found";
         }
@@ -55,7 +51,6 @@ public class ProfileController {
         }
 
         User user = userRepository.findByUsername(username);
-
         if (user == null) {
             return "redirect:/login?error=user_not_found";
         }
@@ -64,7 +59,7 @@ public class ProfileController {
         return "profile-edit";
     }
 
-    // Сохранение изменений профиля (только email)
+    // Сохранение изменений профиля
     @PostMapping("/update")
     public String updateProfile(@RequestParam String email,
                                 RedirectAttributes redirectAttributes) {
@@ -74,28 +69,24 @@ public class ProfileController {
 
         try {
             User user = userRepository.findByUsername(username);
-
             if (user == null) {
                 redirectAttributes.addFlashAttribute("error", "Пользователь не найден");
                 return "redirect:/login";
             }
 
-            // Проверяем, не занят ли email другим пользователем
-            Optional<User> existingUserWithEmail = userRepository.findByEmail(email);
-            if (existingUserWithEmail.isPresent() && !existingUserWithEmail.get().getId().equals(user.getId())) {
-                redirectAttributes.addFlashAttribute("error", "Этот email уже используется другим пользователем");
+            // Простая проверка email
+            User existingUser = userRepository.findByEmail(email);
+            if (existingUser != null && !existingUser.getId().equals(user.getId())) {
+                redirectAttributes.addFlashAttribute("error", "Этот email уже используется");
                 return "redirect:/profile/edit";
             }
 
-            // Обновляем email
             user.setEmail(email);
-
-            // Сохраняем изменения
             userRepository.save(user);
 
-            redirectAttributes.addFlashAttribute("success", "Профиль успешно обновлен!");
+            redirectAttributes.addFlashAttribute("success", "Профиль обновлен!");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Ошибка: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Ошибка при обновлении");
         }
 
         return "redirect:/profile";
@@ -118,38 +109,33 @@ public class ProfileController {
     public String changePassword(@RequestParam String currentPassword,
                                  @RequestParam String newPassword,
                                  @RequestParam String confirmPassword,
-                                 Model model,
-                                 RedirectAttributes redirectAttributes) {
+                                 Model model) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
         try {
             User user = userRepository.findByUsername(username);
-
             if (user == null) {
                 model.addAttribute("error", "Пользователь не найден");
                 return "change-password";
             }
 
-            // Проверяем текущий пароль
             if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
                 model.addAttribute("error", "Текущий пароль неверен");
                 return "change-password";
             }
 
-            // Проверяем, что новый пароль и подтверждение совпадают
             if (!newPassword.equals(confirmPassword)) {
-                model.addAttribute("error", "Новый пароль и подтверждение не совпадают");
+                model.addAttribute("error", "Пароли не совпадают");
                 return "change-password";
             }
 
-            // Обновляем пароль
             user.setPassword(passwordEncoder.encode(newPassword));
             userRepository.save(user);
 
-            redirectAttributes.addFlashAttribute("success", "Пароль успешно изменен!");
-            return "redirect:/profile";
+            model.addAttribute("success", "Пароль успешно изменен!");
+            return "change-password";
         } catch (Exception e) {
             model.addAttribute("error", "Ошибка: " + e.getMessage());
             return "change-password";

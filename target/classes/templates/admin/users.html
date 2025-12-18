@@ -30,38 +30,40 @@
                 <h5 class="text-white text-center my-3">Админ-панель</h5>
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/dashboard}">
+                        <!-- В начале файла, в сайдбаре исправить ссылку: -->
+                        <a class="nav-link" th:href="@{/admin}">
                             <i class="fas fa-tachometer-alt"></i> Дашборд
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/products}">
-                            <i class="fas fa-wine-bottle"></i> Товары
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/admin/users}">
-                            <i class="fas fa-users"></i> Пользователи
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/orders}">
-                            <i class="fas fa-shopping-cart"></i> Заказы
-                        </a>
-                    </li>
-                    <li class="nav-item mt-4">
-                        <a class="nav-link text-warning" th:href="@{/}">
-                            <i class="fas fa-store"></i> Вернуться в магазин
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-danger" th:href="@{/logout}">
-                            <i class="fas fa-sign-out-alt"></i> Выйти
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </nav>
+                        <!-- ИЛИ полностью обновить навигацию: -->
+                        <div class="p-3">
+                            <h4 class="mb-4">
+                                <i class="fas fa-wine-bottle me-2"></i>Admin Panel
+                            </h4>
+                            <hr class="bg-light">
+                            <ul class="nav flex-column">
+                                <li class="nav-item">
+                                    <a class="nav-link text-light" th:href="@{/admin}">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Дашборд
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-light" th:href="@{/admin/orders}">
+                                        <i class="fas fa-shopping-bag me-2"></i>Заказы
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link active text-light" th:href="@{/admin/users}">
+                                        <i class="fas fa-users me-2"></i>Пользователи
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link text-light" th:href="@{/}">
+                                        <i class="fas fa-home me-2"></i>На сайт
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                </nav>
 
         <!-- Main content -->
         <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">

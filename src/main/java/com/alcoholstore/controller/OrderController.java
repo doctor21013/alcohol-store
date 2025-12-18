@@ -18,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
-@RequestMapping("/orders")
+@RequestMapping("/my-orders")  // ← ИЗМЕНИЛ НА /my-orders чтобы не конфликтовать с админкой
 public class OrderController {
 
     @Autowired
@@ -30,7 +30,7 @@ public class OrderController {
     @Autowired
     private UserService userService;
 
-    // ========== МОИ ЗАКАЗЫ ==========
+    // ========== МОИ ЗАКАЗЫ (для обычных пользователей) ==========
     @GetMapping
     public String myOrders(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         if (userDetails == null) {
@@ -44,10 +44,17 @@ public class OrderController {
         model.addAttribute("orders", orders);
         model.addAttribute("loggedIn", true);
         model.addAttribute("userName", username);
-        model.addAttribute("cartItemsCount", cartService.getCartItemCount(username));
-        model.addAttribute("user", user); // Добавлено
+        model.addAttribute("user", user);
 
-        return "orders";
+        // Попробуем получить количество товаров в корзине
+        try {
+            int cartCount = cartService.getCartItemCount(username);
+            model.addAttribute("cartItemsCount", cartCount);
+        } catch (Exception e) {
+            model.addAttribute("cartItemsCount", 0);
+        }
+
+        return "orders"; // Это шаблон для пользователей
     }
 
     // ========== ОФОРМЛЕНИЕ ЗАКАЗА ==========
@@ -74,15 +81,11 @@ public class OrderController {
         model.addAttribute("totalPrice", cart.getTotalPrice());
         model.addAttribute("userName", username);
         model.addAttribute("loggedIn", true);
-        model.addAttribute("user", user); // Добавлено
+        model.addAttribute("user", user);
 
         // Предзаполняем данные пользователя
         model.addAttribute("defaultName", user != null ? user.getUsername() : "");
-
-        // Если у пользователя есть профиль, берем email оттуда
-        if (user != null && user.getEmail() != null) {
-            model.addAttribute("defaultEmail", user.getEmail());
-        }
+        model.addAttribute("defaultEmail", user != null && user.getEmail() != null ? user.getEmail() : "");
 
         return "checkout";
     }
@@ -120,11 +123,12 @@ public class OrderController {
             redirectAttributes.addFlashAttribute("orderTotal", order.getTotalAmount());
             redirectAttributes.addFlashAttribute("success", "Заказ успешно оформлен!");
 
-            return "redirect:/orders/success";
+            return "redirect:/my-orders/success";
 
         } catch (Exception e) {
+            e.printStackTrace();
             redirectAttributes.addFlashAttribute("error", "Ошибка при оформлении заказа: " + e.getMessage());
-            return "redirect:/orders/checkout";
+            return "redirect:/my-orders/checkout";
         }
     }
 
@@ -143,8 +147,40 @@ public class OrderController {
 
         model.addAttribute("loggedIn", true);
         model.addAttribute("userName", userDetails.getUsername());
-        model.addAttribute("cartItemsCount", cartService.getCartItemCount(userDetails.getUsername()));
+
+        try {
+            model.addAttribute("cartItemsCount", cartService.getCartItemCount(userDetails.getUsername()));
+        } catch (Exception e) {
+            model.addAttribute("cartItemsCount", 0);
+        }
 
         return "order-success";
+    }
+
+    // ========== ДЕТАЛИ ЗАКАЗА ==========
+    @GetMapping("/{id}")
+    public String orderDetails(@PathVariable Long id,
+                               @AuthenticationPrincipal UserDetails userDetails,
+                               Model model) {
+        if (userDetails == null) {
+            return "redirect:/login";
+        }
+
+        String username = userDetails.getUsername();
+        Order order = orderService.getOrderById(id).orElse(null);
+        User user = userService.findByUsername(username);
+
+        // Проверяем, что заказ принадлежит пользователю
+        if (order == null || order.getUser() == null ||
+                !order.getUser().getUsername().equals(username)) {
+            return "redirect:/my-orders";
+        }
+
+        model.addAttribute("order", order);
+        model.addAttribute("loggedIn", true);
+        model.addAttribute("userName", username);
+        model.addAttribute("user", user);
+
+        return "order-details";
     }
 }

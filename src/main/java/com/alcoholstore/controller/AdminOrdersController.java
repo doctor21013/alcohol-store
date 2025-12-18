@@ -22,7 +22,7 @@ public class AdminOrdersController {
     public String orderList(Model model) {
         List<Order> orders = orderService.getAllOrders();
         model.addAttribute("orders", orders);
-        return "admin/orders";
+        return "admin/orders"; // Это админский шаблон
     }
 
     @PostMapping("/{id}/status")
@@ -34,9 +34,11 @@ public class AdminOrdersController {
 
     @GetMapping("/{id}")
     public String orderDetails(@PathVariable Long id, Model model) {
-        orderService.getOrderById(id).ifPresent(order -> {
-            model.addAttribute("order", order);
-        });
+        Order order = orderService.getOrderById(id).orElse(null);
+        if (order == null) {
+            return "redirect:/admin/orders";
+        }
+        model.addAttribute("order", order);
         return "admin/order-details";
     }
 }

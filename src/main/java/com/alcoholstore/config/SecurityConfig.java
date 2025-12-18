@@ -17,9 +17,9 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/webjars/**",
-                                "/register", "/register/**", "/login", "/error").permitAll()
+                                "/register", "/login", "/error").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/catalog", "/cart/**", "/profile/**", "/orders/**").authenticated() // Добавлено /orders/**
+                        .requestMatchers("/orders/**").authenticated()  // ← ДОБАВЛЕНО
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
@@ -30,8 +30,6 @@ public class SecurityConfig {
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/")
-                        .invalidateHttpSession(true)
-                        .deleteCookies("JSESSIONID")
                         .permitAll()
                 );
 

@@ -295,6 +295,14 @@
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/profile}" sec:authorize="isAuthenticated()">Личный кабинет</a>
                 </li>
+
+                <!-- В навигационной панели -->
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/my-orders}" sec:authorize="isAuthenticated()">
+                        <i class="fas fa-shopping-bag me-1"></i>Мои заказы
+                    </a>
+                </li>
+
             </ul>
 
             <div class="d-flex align-items-center">

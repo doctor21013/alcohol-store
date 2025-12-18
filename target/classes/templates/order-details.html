@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детали заказа | Alcohol Store</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+        }
+        body {
+            background-color: #f8f9fa;
+            padding-top: 76px;
+        }
+        .order-header {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .order-items {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+        .status-badge {
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+        .badge-pending { background-color: #ffc107; color: #000; }
+        .badge-processing { background-color: #17a2b8; color: #fff; }
+        .badge-completed { background-color: #28a745; color: #fff; }
+        .badge-cancelled { background-color: #dc3545; color: #fff; }
+    </style>
+</head>
+<body>
+
+<!-- Навигация -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: var(--primary-color);">
+    <div class="container">
+        <a class="navbar-brand" th:href="@{/}">
+            <i class="fas fa-wine-bottle me-2"></i>Alcohol Store
+        </a>
+        <div class="d-flex align-items-center">
+            <a th:href="@{/}" class="btn btn-outline-light btn-sm me-2">
+                <i class="fas fa-home me-1"></i> На главную
+            </a>
+            <a th:href="@{/my-orders}" class="btn btn-outline-light btn-sm me-2">
+                <i class="fas fa-arrow-left me-1"></i> Назад к заказам
+            </a>
+            <span class="text-light">
+                <i class="fas fa-user me-1"></i>
+                <span th:text="${userName}"></span>
+            </span>
+        </div>
+    </div>
+</nav>
+
+<div class="container mt-5">
+    <!-- Заголовок -->
+    <div class="order-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1><i class="fas fa-file-invoice me-2"></i>Заказ №<span th:text="${order.id}"></span></h1>
+            <div>
+                <span th:if="${order.status == 'PENDING'}" class="status-badge badge-pending">Ожидает обработки</span>
+                <span th:if="${order.status == 'PROCESSING'}" class="status-badge badge-processing">В обработке</span>
+                <span th:if="${order.status == 'COMPLETED'}" class="status-badge badge-completed">Завершен</span>
+                <span th:if="${order.status == 'CANCELLED'}" class="status-badge badge-cancelled">Отменен</span>
+            </div>
+        </div>
+        <p class="text-muted mb-0">Дата оформления: <span th:text="${#dates.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></span></p>
+    </div>
+
+    <!-- Информация о заказе -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Информация о покупателе</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Имя:</strong> <span th:text="${order.customerName}"></span></p>
+                    <p><strong>Email:</strong> <span th:text="${order.customerEmail}"></span></p>
+                    <p><strong>Телефон:</strong> <span th:text="${order.customerPhone}"></span></p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Информация о доставке</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Адрес доставки:</strong> <span th:text="${order.deliveryAddress}"></span></p>
+                    <p th:if="${order.notes}"><strong>Комментарий:</strong> <span th:text="${order.notes}"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Товары в заказе -->
+    <div class="order-items">
+        <h4 class="mb-4"><i class="fas fa-shopping-cart me-2"></i>Состав заказа</h4>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th class="text-center">Количество</th>
+                    <th class="text-center">Цена за шт.</th>
+                    <th class="text-center">Сумма</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${order.orderItems}">
+                    <td>
+                        <strong th:text="${item.product.name}"></strong>
+                        <div class="text-muted small" th:text="${item.product.description} ?: 'Описание отсутствует'"></div>
+                    </td>
+                    <td class="text-center" th:text="${item.quantity}"></td>
+                    <td class="text-center" th:text="${#numbers.formatDecimal(item.price, 0, 2) + ' руб.'}"></td>
+                    <td class="text-center" th:text="${#numbers.formatDecimal(item.price * item.quantity, 0, 2) + ' руб.'}"></td>
+                </tr>
+                </tbody>
+                <tfoot>
+                <tr class="table-active">
+                    <td colspan="3" class="text-end"><strong>Итого:</strong></td>
+                    <td class="text-center">
+                        <h4 class="mb-0 text-success" th:text="${#numbers.formatDecimal(order.totalAmount, 0, 2) + ' руб.'}"></h4>
+                    </td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="d-flex justify-content-between mt-4">
+        <a th:href="@{/my-orders}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-1"></i> Вернуться к списку заказов
+        </a>
+        <a th:href="@{/catalog}" class="btn btn-primary">
+            <i class="fas fa-shopping-cart me-1"></i> Сделать новый заказ
+        </a>
+    </div>
+</div>
+
+<footer class="mt-5 py-4 bg-dark text-white">
+    <div class="container text-center">
+        <p class="mb-0">© 2025 Alcohol Store. Все права защищены.</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
