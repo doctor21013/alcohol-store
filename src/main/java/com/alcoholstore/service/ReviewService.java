@@ -20,7 +20,7 @@ public class ReviewService {
     private ReviewRepository reviewRepository;
 
     @Autowired
-    private UserService userService;
+    private com.alcoholstore.service.UserService userService;
 
     @Autowired
     private ProductService productService;

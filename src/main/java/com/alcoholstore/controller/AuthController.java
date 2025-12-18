@@ -2,133 +2,134 @@ package com.alcoholstore.controller;
 
 import com.alcoholstore.model.User;
 import com.alcoholstore.repository.UserRepository;
-import com.alcoholstore.service.UserService;
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpSession;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDateTime;
-
 @Controller
 public class AuthController {
 
-    @Autowired
-    private UserService userService;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    public AuthController(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
-    // ========== ПОКАЗ ФОРМЫ ВХОДА ==========
-    @GetMapping("/login")
-    public String showLoginPage(Model model,
-                                @RequestParam(value = "error", required = false) String error) {
-        if (error != null) {
-            model.addAttribute("error", "Неверный email или пароль");
+    @GetMapping("/")
+    public String home(HttpSession session) {
+        if (session.getAttribute("user") != null) {
+            return "redirect:/dashboard";
         }
+        return "home";
+    }
+
+    @GetMapping("/home")
+    public String homePage() {
+        return "home";
+    }
+
+    @GetMapping("/login")
+    public String loginPage() {
         return "login";
     }
 
-    // ========== ОБРАБОТКА ВХОДА ==========
     @PostMapping("/login")
-    public String processLogin(@RequestParam String email,
-                               @RequestParam String password,
-                               HttpSession session,
-                               Model model) {
+    public String login(@RequestParam String username,
+                        @RequestParam String password,
+                        HttpSession session,
+                        RedirectAttributes redirectAttributes) {
 
-        var userOpt = userService.getUserByEmail(email);
+        var userOpt = userRepository.findByUsernameAndPassword(username, password);
 
-        if (userOpt.isEmpty()) {
-            model.addAttribute("error", "Пользователь не найден");
-            return "login";
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            session.setAttribute("user", user);
+            session.setAttribute("username", user.getUsername());
+            session.setAttribute("isAdmin", user.isAdmin());
+            return "redirect:/dashboard";
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Неверное имя пользователя или пароль");
+            return "redirect:/login";
         }
-
-        User user = userOpt.get();
-
-        // ПРЯМОЕ СРАВНЕНИЕ ПАРОЛЕЙ (без хэширования)
-        if (!user.getPassword().equals(password)) {
-            model.addAttribute("error", "Неверный пароль");
-            return "login";
-        }
-
-        // Проверяем активность
-        if (!user.getEnabled()) {
-            model.addAttribute("error", "Аккаунт заблокирован");
-            return "login";
-        }
-
-        // Сохраняем в сессию
-        session.setAttribute("userId", user.getId());
-        session.setAttribute("userName", user.getFullName());
-        session.setAttribute("userEmail", user.getEmail());
-        session.setAttribute("userRole", user.getRole());
-        session.setAttribute("userPhone", user.getPhone());
-
-        return "redirect:/";
     }
 
-    // ========== ПОКАЗ ФОРМЫ РЕГИСТРАЦИИ ==========
     @GetMapping("/register")
-    public String showRegisterPage(Model model) {
+    public String registerPage(Model model) {
+        model.addAttribute("user", new User());
         return "register";
     }
 
-    // ========== ОБРАБОТКА РЕГИСТРАЦИИ ==========
     @PostMapping("/register")
-    public String registerUser(@RequestParam String fullName,
-                               @RequestParam String email,
-                               @RequestParam String phone,
-                               @RequestParam String password,
-                               @RequestParam(required = false) Boolean ageConfirmed,
-                               RedirectAttributes redirectAttributes) {
+    public String register(@ModelAttribute User user,
+                           @RequestParam String confirmPassword,
+                           HttpSession session,
+                           RedirectAttributes redirectAttributes) {
 
-        try {
-            // Проверка на существующего пользователя
-            if (userRepository.findByEmail(email).isPresent()) {
-                redirectAttributes.addFlashAttribute("error", "Пользователь с таким email уже существует");
-                return "redirect:/register";
-            }
-
-            // Проверка телефона
-            if (userRepository.findByPhone(phone).isPresent()) {
-                redirectAttributes.addFlashAttribute("error", "Пользователь с таким телефоном уже существует");
-                return "redirect:/register";
-            }
-
-            // Проверка подтверждения возраста
-            if (ageConfirmed == null || !ageConfirmed) {
-                redirectAttributes.addFlashAttribute("error", "Необходимо подтвердить, что вам есть 18 лет");
-                return "redirect:/register";
-            }
-
-            // Создание пользователя (пароль сохраняется как есть)
-            User user = new User();
-            user.setFullName(fullName);
-            user.setEmail(email);
-            user.setPhone(phone);
-            user.setPassword(password); // Пароль без кодирования
-            user.setAgeConfirmed(true);
-            user.setRole("USER");
-            user.setEnabled(true);
-            user.setCreatedAt(LocalDateTime.now());
-
-            userRepository.save(user);
-
-            redirectAttributes.addFlashAttribute("success", "Регистрация успешна! Теперь войдите в систему.");
-            return "redirect:/login";
-
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Ошибка регистрации: " + e.getMessage());
+        if (userRepository.existsByUsername(user.getUsername())) {
+            redirectAttributes.addFlashAttribute("error", "Имя пользователя уже занято");
             return "redirect:/register";
         }
+
+        if (userRepository.existsByEmail(user.getEmail())) {
+            redirectAttributes.addFlashAttribute("error", "Email уже используется");
+            return "redirect:/register";
+        }
+
+        if (!user.getPassword().equals(confirmPassword)) {
+            redirectAttributes.addFlashAttribute("error", "Пароли не совпадают");
+            return "redirect:/register";
+        }
+
+        user.setAdmin(false);
+        User savedUser = userRepository.save(user);
+
+        session.setAttribute("user", savedUser);
+        session.setAttribute("username", savedUser.getUsername());
+        session.setAttribute("isAdmin", savedUser.isAdmin());
+
+        return "redirect:/dashboard";
     }
 
-    // ========== ВЫХОД ==========
+    @GetMapping("/dashboard")
+    public String dashboard(HttpSession session, Model model) {
+        if (session.getAttribute("user") == null) {
+            return "redirect:/login";
+        }
+
+        model.addAttribute("username", session.getAttribute("username"));
+        model.addAttribute("isAdmin", session.getAttribute("isAdmin"));
+        return "dashboard";
+    }
+
     @GetMapping("/logout")
     public String logout(HttpSession session) {
         session.invalidate();
-        return "redirect:/";
+        return "redirect:/login";
+    }
+
+    @PostConstruct
+    public void initTestUsers() {
+        if (!userRepository.existsByUsername("admin")) {
+            User admin = new User();
+            admin.setUsername("admin");
+            admin.setEmail("admin@example.com");
+            admin.setPassword("admin123");
+            admin.setAdmin(true);
+            userRepository.save(admin);
+            System.out.println("Создан тестовый администратор: admin / admin123");
+        }
+
+        if (!userRepository.existsByUsername("user")) {
+            User user = new User();
+            user.setUsername("user");
+            user.setEmail("user@example.com");
+            user.setPassword("user123");
+            user.setAdmin(false);
+            userRepository.save(user);
+            System.out.println("Создан тестовый пользователь: user / user123");
+        }
     }
 }
