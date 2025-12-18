@@ -1,6 +1,7 @@
 package com.alcoholstore.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,8 +14,8 @@ public class Cart {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true)
     private User user;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -25,6 +26,15 @@ public class Cart {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    // Конструкторы
+    public Cart() {}
+
+    public Cart(User user) {
+        this.user = user;
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
 
     @PrePersist
     protected void onCreate() {
@@ -53,7 +63,7 @@ public class Cart {
     public LocalDateTime getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 
-    // Утилитные методы
+    // Методы для работы с корзиной
     public void addItem(Product product, int quantity) {
         CartItem existingItem = findItemByProduct(product);
         if (existingItem != null) {
@@ -65,10 +75,12 @@ public class Cart {
             newItem.setQuantity(quantity);
             items.add(newItem);
         }
+        updatedAt = LocalDateTime.now();
     }
 
-    public void removeItem(Long productId) {
-        items.removeIf(item -> item.getProduct().getId().equals(productId));
+    public void removeItem(Product product) {
+        items.removeIf(item -> item.getProduct().getId().equals(product.getId()));
+        updatedAt = LocalDateTime.now();
     }
 
     public CartItem findItemByProduct(Product product) {
@@ -78,15 +90,22 @@ public class Cart {
                 .orElse(null);
     }
 
-    public double getTotalPrice() {
+    public BigDecimal getTotalPrice() {
         return items.stream()
-                .mapToDouble(item -> item.getProduct().getPrice().doubleValue() * item.getQuantity())
-                .sum();
+                .map(CartItem::getTotalPrice)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    public int getTotalItems() {
+
+
+    public int getTotalItemsCount() {
         return items.stream()
                 .mapToInt(CartItem::getQuantity)
                 .sum();
+    }
+
+    public void clear() {
+        items.clear();
+        updatedAt = LocalDateTime.now();
     }
 }

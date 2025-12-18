@@ -1,11 +1,11 @@
 package com.alcoholstore.service;
 
 import com.alcoholstore.model.*;
-import com.alcoholstore.repository.OrderRepository;
-import com.alcoholstore.repository.UserRepository;
+import com.alcoholstore.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,31 +18,43 @@ public class OrderService {
     private OrderRepository orderRepository;
 
     @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
+    private CartService cartService;
+
+    @Autowired
     private UserRepository userRepository;
 
-    // Создать заказ из корзины
+    // Создать заказ из корзины пользователя
     @Transactional
-    public Order createOrderFromCart(Cart cart,
+    public Order createOrderFromCart(String username,
                                      String customerName,
                                      String customerEmail,
                                      String customerPhone,
                                      String deliveryAddress,
                                      String notes) {
 
+        User user = userRepository.findByUsername(username);
+        if (user == null) {
+            throw new RuntimeException("Пользователь не найден");
+        }
+
+        Cart cart = cartService.getOrCreateCart(username);
+        if (cart.getItems().isEmpty()) {
+            throw new RuntimeException("Корзина пуста");
+        }
+
         // Создаем новый заказ
         Order order = new Order();
         order.setOrderDate(LocalDateTime.now());
         order.setStatus("PENDING");
-        order.setCustomerName(customerName);
-        order.setCustomerEmail(customerEmail);
+        order.setCustomerName(customerName != null ? customerName : user.getUsername());
+        order.setCustomerEmail(customerEmail != null ? customerEmail : user.getEmail());
         order.setCustomerPhone(customerPhone);
         order.setDeliveryAddress(deliveryAddress);
         order.setNotes(notes);
-
-        // Если есть авторизованный пользователь, связываем с ним
-        if (cart.getUser() != null) {
-            order.setUser(cart.getUser());
-        }
+        order.setUser(user);
 
         // Копируем товары из корзины в заказ
         BigDecimal totalAmount = BigDecimal.ZERO;
@@ -53,9 +65,7 @@ public class OrderService {
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setPrice(cartItem.getProduct().getPrice());
 
-            // Вычисляем общую сумму
-            BigDecimal itemTotal = cartItem.getProduct().getPrice()
-                    .multiply(BigDecimal.valueOf(cartItem.getQuantity()));
+            BigDecimal itemTotal = cartItem.getTotalPrice();
             totalAmount = totalAmount.add(itemTotal);
 
             order.getOrderItems().add(orderItem);
@@ -63,8 +73,11 @@ public class OrderService {
 
         order.setTotalAmount(totalAmount);
 
-        // Сохраняем заказ
-        return orderRepository.save(order);
+        // Сохраняем заказ и очищаем корзину
+        Order savedOrder = orderRepository.save(order);
+        cartService.clearCart(username);
+
+        return savedOrder;
     }
 
     // Получить заказы пользователя
@@ -73,8 +86,7 @@ public class OrderService {
         if (user != null) {
             return orderRepository.findByUserOrderByOrderDateDesc(user);
         }
-        // Если пользователь не найден, попробуем найти по email
-        return orderRepository.findByCustomerEmailOrderByOrderDateDesc(username);
+        return List.of();
     }
 
     // Получить все заказы (для админа)

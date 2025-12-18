@@ -25,8 +25,8 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String email;
 
-    @Column(name = "role")
-    private String role;
+    @Column(name = "role", nullable = false, length = 20)
+    private String role = "ROLE_USER";
 
     @Column(name = "enabled")
     private Boolean enabled = true; // Изменено с boolean на Boolean

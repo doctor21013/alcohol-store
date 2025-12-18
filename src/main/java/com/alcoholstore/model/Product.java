@@ -41,7 +41,7 @@ public class Product {
     @Column(name = "is_available")
     private Boolean isAvailable = true;
 
-    @Transient  // ⬅️ НОВОЕ ПОЛЕ - не сохраняется в БД
+    @Transient
     private Boolean favorite = false;
 
     // Конструкторы
@@ -61,7 +61,9 @@ public class Product {
         this.country = country;
     }
 
-    // Геттеры и сеттеры для всех полей
+
+
+    // Геттеры и сеттеры
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -95,12 +97,16 @@ public class Product {
     public Boolean getIsAvailable() { return isAvailable; }
     public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }
 
-    // Геттер и сеттер для поля favorite
     public Boolean getFavorite() { return favorite; }
     public void setFavorite(Boolean favorite) { this.favorite = favorite; }
 
     // Удобный метод для получения полного пути к изображению
     public String getImageUrl() {
         return "/images.products/" + imageFilename;
+    }
+
+    // Удобный метод для получения цены как Double
+    public Double getPriceAsDouble() {
+        return price != null ? price.doubleValue() : 0.0;
     }
 }

@@ -3,9 +3,9 @@ package com.alcoholstore.controller;
 import com.alcoholstore.model.Product;
 import com.alcoholstore.service.CartService;
 import com.alcoholstore.service.CatalogService;
-import com.alcoholstore.service.ReviewService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Controller
+@RequestMapping("/products")
 public class ProductController {
 
     @Autowired
@@ -23,12 +24,11 @@ public class ProductController {
     @Autowired
     private CartService cartService;
 
-    @Autowired
-    private ReviewService reviewService;
-
-    // ========== СТРАНИЦА ДЕТАЛЕЙ ТОВАРА ==========
-    @GetMapping("/product/{id}")
-    public String productDetail(@PathVariable Long id, Model model, HttpSession session) {
+    // Страница деталей товара
+    @GetMapping("/{id}")
+    public String productDetail(@PathVariable Long id,
+                                @AuthenticationPrincipal UserDetails userDetails,
+                                Model model) {
         Optional<Product> productOpt = catalogService.getProductById(id);
 
         if (productOpt.isEmpty()) {
@@ -39,38 +39,30 @@ public class ProductController {
         model.addAttribute("product", product);
 
         // Количество товаров в корзине
-        model.addAttribute("cartItemsCount", cartService.getCartItemCount(session));
+        if (userDetails != null) {
+            int cartItemsCount = cartService.getCartItemCount(userDetails.getUsername());
+            model.addAttribute("cartItemsCount", cartItemsCount);
+        } else {
+            model.addAttribute("cartItemsCount", 0);
+        }
 
         return "product-detail";
     }
 
-    // ========== ПОИСК ТОВАРОВ ==========
-    @GetMapping("/search")
-    public String searchProducts(@RequestParam String query, Model model, HttpSession session) {
-        List<Product> searchResults = catalogService.searchProducts(query);
+    // Быстрое добавление в корзину
+    @PostMapping("/{id}/add-to-cart")
+    public String addToCart(@PathVariable Long id,
+                            @RequestParam(defaultValue = "1") Integer quantity,
+                            @AuthenticationPrincipal UserDetails userDetails,
+                            RedirectAttributes redirectAttributes) {
 
-        model.addAttribute("products", searchResults);
-        model.addAttribute("searchQuery", query);
-        model.addAttribute("searchResultsCount", searchResults.size());
-
-        // Количество товаров в корзине
-        model.addAttribute("cartItemsCount", cartService.getCartItemCount(session));
-
-        return "catalog";
-    }
-
-    // ========== ДОБАВЛЕНИЕ В КОРЗИНУ (через POST) ==========
-
-
-    // ========== БЫСТРОЕ ДОБАВЛЕНИЕ В КОРЗИНУ ИЗ КАТАЛОГА ==========
-    @PostMapping("/cart/add-quick")
-    public String addToCartQuick(@RequestParam Long productId,
-                                 @RequestParam(defaultValue = "1") Integer quantity,
-                                 HttpSession session,
-                                 RedirectAttributes redirectAttributes) {
+        if (userDetails == null) {
+            redirectAttributes.addFlashAttribute("error", "Для добавления в корзину необходимо войти в систему");
+            return "redirect:/login";
+        }
 
         try {
-            cartService.addToCart(session, productId, quantity);
+            cartService.addToCart(userDetails.getUsername(), id, quantity);
             redirectAttributes.addFlashAttribute("success", "Товар добавлен в корзину");
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Ошибка при добавлении в корзину: " + e.getMessage());

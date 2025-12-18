@@ -1,84 +1,399 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>Корзина</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Корзина | Alcohol Store</title>
+
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #e74c3c;
+            --accent-color: #3498db;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            padding-top: 76px;
+        }
+
+        .cart-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .cart-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+
+        .cart-item {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border: 1px solid #eaeaea;
+        }
+
+        .cart-item-image {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .cart-summary {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 100px;
+        }
+
+        .quantity-input {
+            width: 80px;
+            text-align: center;
+        }
+
+        .empty-cart {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .empty-cart-icon {
+            font-size: 5rem;
+            color: #ddd;
+            margin-bottom: 20px;
+        }
+
+        .btn-checkout {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 25px;
+            width: 100%;
+            font-weight: 600;
+        }
+
+        .btn-checkout:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: white;
+        }
+
+        .cart-badge {
+            background-color: var(--secondary-color);
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            margin-left: 5px;
+        }
+
+        .product-category {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+
+<!-- Навигационная панель -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: var(--primary-color);">
     <div class="container">
-        <a class="navbar-brand" th:href="@{/}">Alcohol Store</a>
-        <div class="navbar-nav ms-auto">
-            <a class="nav-link" th:href="@{/catalog}">Каталог</a>
-            <a class="nav-link" th:href="@{/cart}">Корзина</a>
-            <a class="nav-link" th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Админ панель</a>
-            <a class="nav-link" th:href="@{/profile}">Личный кабинет</a>
-            <form th:action="@{/logout}" method="post">
-                <button type="submit" class="btn btn-link nav-link">Выйти</button>
-            </form>
+        <a class="navbar-brand" th:href="@{/}">
+            <i class="fas fa-wine-bottle me-2"></i>Alcohol Store
+        </a>
+
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/}">Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/catalog}">Каталог</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" th:href="@{/cart}">
+                        <i class="fas fa-shopping-cart me-1"></i>Корзина
+                        <span sec:authorize="isAuthenticated()" class="badge bg-danger ms-1"
+                              th:if="${cart != null and cart.totalItemsCount > 0}"
+                              th:text="${cart.totalItemsCount}">
+                        </span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="d-flex align-items-center">
+                <span sec:authorize="isAuthenticated()">
+                    <span class="text-light me-3">
+                        <i class="fas fa-user me-1"></i>
+                        <span sec:authentication="name"></span>
+                    </span>
+                    <form th:action="@{/logout}" method="post" class="d-inline">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-sign-out-alt me-1"></i>Выйти
+                        </button>
+                    </form>
+                </span>
+            </div>
         </div>
     </div>
 </nav>
 
+<!-- Сообщения -->
 <div class="container mt-4">
-    <h1>Корзина</h1>
-
-    <!-- Сообщения -->
-    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${message}"></span>
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${success}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 
-    <div th:if="${cart != null and not cart.isEmpty()}">
-        <table class="table">
-            <thead>
-            <tr>
-                <th>Товар</th>
-                <th>Количество</th>
-                <th>Цена</th>
-                <th>Сумма</th>
-                <th>Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="entry : ${cart}">
-                <td th:text="${entry.key.name}"></td>
-                <td th:text="${entry.value}"></td>
-                <td th:text="${#numbers.formatDecimal(entry.key.price, 0, 2)}">0</td>
-                <td th:text="${#numbers.formatDecimal(entry.key.price.multiply(T(java.math.BigDecimal).valueOf(entry.value)), 0, 2)}">0</td>
-                <td>
-                    <form th:action="@{/cart/remove}" method="post" class="d-inline">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                        <input type="hidden" name="productId" th:value="${entry.key.id}">
-                        <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
-                    </form>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+</div>
 
-        <div class="mt-3">
-            <h4>Общая сумма: <span th:text="${#numbers.formatDecimal(total, 0, 2)}">0</span> руб.</h4>
-            <div class="mt-3">
-                <a th:href="@{/catalog}" class="btn btn-secondary">Продолжить покупки</a>
-                <form th:action="@{/cart/clear}" method="post" class="d-inline">
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                    <button type="submit" class="btn btn-warning">Очистить корзину</button>
-                </form>
-                <a th:href="@{/checkout}" class="btn btn-success">Оформить заказ</a>
+<!-- Основной контент -->
+<div class="container cart-container mt-4" sec:authorize="isAuthenticated()">
+
+    <!-- Заголовок корзины -->
+    <div class="cart-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="fas fa-shopping-cart me-2"></i>Ваша корзина</h1>
+                <p class="mb-0" th:if="${cart != null and cart.totalItemsCount > 0}">
+                    В корзине <strong th:text="${cart.totalItemsCount}"></strong> товар(ов)
+                </p>
+            </div>
+            <div>
+                <a th:href="@{/catalog}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Продолжить покупки
+                </a>
             </div>
         </div>
     </div>
 
-    <div th:if="${cart == null or cart.isEmpty()}" class="alert alert-info">
-        <h4>Корзина пуста</h4>
-        <p>Добавьте товары в корзину, чтобы сделать заказ.</p>
-        <a th:href="@{/catalog}" class="btn btn-primary">Перейти в каталог</a>
+    <!-- Если корзина пуста -->
+    <div th:if="${cart == null or cart.items == null or cart.items.empty}" class="empty-cart">
+        <div class="empty-cart-icon">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <h3>Ваша корзина пуста</h3>
+        <p class="text-muted mb-4">Добавьте товары из каталога, чтобы продолжить</p>
+        <a th:href="@{/catalog}" class="btn btn-primary btn-lg">
+            <i class="fas fa-store me-2"></i>Перейти в каталог
+        </a>
+    </div>
+
+    <!-- Если в корзине есть товары -->
+    <div th:if="${cart != null and cart.items != null and not cart.items.empty}">
+        <div class="row">
+            <!-- Список товаров -->
+            <div class="col-lg-8">
+                <div th:each="item : ${cart.items}" class="cart-item">
+                    <div class="row align-items-center">
+                        <!-- Изображение товара -->
+                        <div class="col-md-2">
+                            <img th:src="@{/images.products/__${item.product.imageFilename}__}"
+                                 th:alt="${item.product.name}"
+                                 class="cart-item-image"
+                                 th:onerror="this.src='https://images.unsplash.com/photo-1516470930795-6ba256c9dab5?w=120&h=120&fit=crop'">
+                        </div>
+
+                        <!-- Информация о товаре -->
+                        <div class="col-md-5">
+                            <h5 th:text="${item.product.name}" class="mb-2"></h5>
+                            <div class="product-category" th:text="${item.product.category}"></div>
+                            <p class="mb-1">
+                                <small>
+                                    <span th:if="${item.product.volumeMl != null}"
+                                          th:text="${item.product.volumeMl} + ' мл'"></span>
+                                    <span th:if="${item.product.alcoholPercentage != null}"
+                                          th:text="' • ' + ${item.product.alcoholPercentage} + '%'"></span>
+                                    <span th:if="${item.product.country != null}"
+                                          th:text="' • ' + ${item.product.country}"></span>
+                                </small>
+                            </p>
+                        </div>
+
+                        <!-- Количество -->
+                        <div class="col-md-2">
+                            <form th:action="@{/cart/update/{productId}(productId=${item.product.id})}"
+                                  method="post" class="d-flex align-items-center">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <div class="input-group input-group-sm">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            onclick="changeQuantity(this, -1)">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    <input type="number" name="quantity" th:value="${item.quantity}" min="1"
+                                           class="form-control text-center quantity-input"
+                                           onchange="updateQuantity(this)">
+                                    <button class="btn btn-outline-secondary" type="button"
+                                            onclick="changeQuantity(this, 1)">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Цена и удаление -->
+                        <div class="col-md-3 text-end">
+                            <h5 class="mb-2">
+                                <span th:text="${#numbers.formatDecimal(item.totalPriceAsDouble, 0, 2) + ' руб.'}"></span>
+                            </h5>
+                            <small class="text-muted">
+                                <span th:text="${#numbers.formatDecimal(item.product.priceAsDouble, 0, 2) + ' руб./шт'}"></span>
+                            </small>
+                            <br>
+                            <form th:action="@{/cart/remove/{productId}(productId=${item.product.id})}"
+                                  method="post" class="mt-2">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                <button type="submit" class="btn btn-link text-danger p-0">
+                                    <i class="fas fa-trash me-1"></i>Удалить
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Очистить корзину -->
+                <div class="text-end mb-4">
+                    <form th:action="@{/cart/clear}" method="post">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                        <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Очистить всю корзину?')">
+                            <i class="fas fa-trash-alt me-2"></i>Очистить корзину
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Итоговая сумма -->
+            <div class="col-lg-4">
+                <div class="cart-summary">
+                    <h4 class="mb-4">Итог заказа</h4>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Количество товаров:</span>
+                            <span th:text="${cart.totalItemsCount}"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Сумма товаров:</span>
+                            <span th:text="${#numbers.formatDecimal(cart.totalPrice, 0, 2) + ' руб.'}"></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Доставка:</span>
+                            <span th:if="${cart.totalPrice >= 3000}" class="text-success">Бесплатно</span>
+                            <span th:unless="${cart.totalPrice >= 3000}">300 руб.</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between fw-bold fs-5">
+                            <span>Итого к оплате:</span>
+                            <span th:text="${cart.totalPrice >= 3000 ?
+                                    #numbers.formatDecimal(cart.totalPrice, 0, 2) + ' руб.' :
+                                    #numbers.formatDecimal(cart.totalPrice + 300, 0, 2) + ' руб.'}"></span>
+                        </div>
+                    </div>
+
+                    <!-- Стоимость доставки информация -->
+                    <div class="alert alert-info mb-4" th:if="${cart.totalPrice < 3000}">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            Добавьте товаров ещё на
+                            <span th:text="${#numbers.formatDecimal(3000 - cart.totalPrice, 0, 2) + ' руб.'}"></span>
+                            для бесплатной доставки!
+                        </small>
+                    </div>
+
+                    <!-- Кнопка оформления заказа -->
+                    <a th:href="@{/orders/checkout}" class="btn btn-checkout mb-3">
+                        <i class="fas fa-credit-card me-2"></i>Перейти к оформлению
+                    </a>
+
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Нажимая кнопку, вы соглашаетесь с
+                            <a href="#">правилами продажи</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Если не авторизован -->
+<div sec:authorize="!isAuthenticated()" class="container mt-5">
+    <div class="alert alert-warning text-center">
+        <h4><i class="fas fa-exclamation-triangle me-2"></i>Требуется авторизация</h4>
+        <p>Для просмотра корзины необходимо войти в систему</p>
+        <a th:href="@{/login}" class="btn btn-primary">
+            <i class="fas fa-sign-in-alt me-2"></i>Войти
+        </a>
+    </div>
+</div>
+
+<!-- Bootstrap 5 JavaScript Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Функции для управления количеством товаров
+    function changeQuantity(button, delta) {
+        const input = button.closest('.input-group').querySelector('input[type="number"]');
+        let newValue = parseInt(input.value) + delta;
+        if (newValue < 1) newValue = 1;
+        input.value = newValue;
+        updateQuantity(input);
+    }
+
+    function updateQuantity(input) {
+        const form = input.closest('form');
+        if (form) {
+            form.submit();
+        }
+    }
+
+    // Подтверждение удаления
+    document.querySelectorAll('form[action*="/remove/"] button').forEach(button => {
+        button.addEventListener('click', function(e) {
+            if (!confirm('Удалить товар из корзины?')) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Обновляем баджик в навбаре
+    function updateCartBadge() {
+        const cartBadge = document.querySelector('.navbar .badge');
+        if (cartBadge) {
+            // Здесь можно добавить AJAX запрос для обновления количества
+        }
+    }
+</script>
 </body>
 </html>

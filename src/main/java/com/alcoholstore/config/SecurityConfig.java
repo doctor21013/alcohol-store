@@ -16,12 +16,10 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/css/**", "/js/**", "/webjars/**",
-                                "/register", "/register/**", "/login").permitAll()
+                        .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/webjars/**",
+                                "/register", "/register/**", "/login", "/error").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/catalog", "/cart/**").authenticated()
-                        .requestMatchers("/products").hasAuthority("ROLE_ADMIN") // Только админы
-                        .requestMatchers("/profile/**", "/account").authenticated()
+                        .requestMatchers("/catalog", "/cart/**", "/profile/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

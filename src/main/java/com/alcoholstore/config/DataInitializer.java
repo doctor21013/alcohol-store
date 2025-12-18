@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -17,33 +18,33 @@ public class DataInitializer implements CommandLineRunner {
     private PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public void run(String... args) throws Exception {
-        // Создаем администратора, если его нет
-        if (userRepository.findByUsername("admin") == null) {
-            User admin = new User();
-            admin.setUsername("admin");
-            admin.setEmail("admin@alcoholstore.ru");
-            admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole("ROLE_ADMIN"); // Используем поле role вместо isAdmin
-            admin.setEnabled(true);
-            userRepository.save(admin);
-            System.out.println("✅ Создан администратор: admin / admin123");
-        }
+        System.out.println("🔧 ИНИЦИАЛИЗАЦИЯ И ПРОВЕРКА ПОЛЬЗОВАТЕЛЕЙ...");
 
-        // Создаем тестового пользователя
-        if (userRepository.findByUsername("user") == null) {
+        // Проверяем существование пользователей и создаем только если их нет
+        createUserIfNotExists("admin", "admin@alcoholstore.ru", "ROLE_ADMIN", "admin123");
+        createUserIfNotExists("user", "user@example.com", "ROLE_USER", "user123");
+
+        System.out.println("✅ ИНИЦИАЛИЗАЦИЯ ЗАВЕРШЕНА!");
+    }
+
+    private void createUserIfNotExists(String username, String email, String role, String password) {
+        // Проверяем, существует ли пользователь с таким email
+        if (userRepository.findByEmail(email).isEmpty()) {
+            System.out.println("👤 Создание пользователя: " + username);
+
             User user = new User();
-            user.setUsername("user");
-            user.setEmail("user@example.com");
-            user.setPassword(passwordEncoder.encode("user123"));
-            user.setRole("ROLE_USER"); // Обычный пользователь
+            user.setUsername(username);
+            user.setEmail(email);
+            user.setRole(role);
+            user.setPassword(passwordEncoder.encode(password));
             user.setEnabled(true);
-            userRepository.save(user);
-            System.out.println("✅ Создан тестовый пользователь: user / user123");
-        }
 
-        System.out.println("🎯 Для входа используйте:");
-        System.out.println("   Админ: admin / admin123");
-        System.out.println("   Пользователь: user / user123");
+            userRepository.save(user);
+            System.out.println("✅ Пользователь " + username + " создан успешно!");
+        } else {
+            System.out.println("ℹ️ Пользователь с email " + email + " уже существует, пропускаем создание.");
+        }
     }
 }

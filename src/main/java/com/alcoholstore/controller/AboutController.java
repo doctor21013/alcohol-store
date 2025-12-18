@@ -1,8 +1,9 @@
 package com.alcoholstore.controller;
 
 import com.alcoholstore.service.CartService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,19 +15,19 @@ public class AboutController {
     private CartService cartService;
 
     @GetMapping("/about")
-    public String about(HttpSession session, Model model) {
-        // Проверяем авторизацию
-        if (session.getAttribute("userEmail") != null) {
+    public String about(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        // Проверяем авторизацию через Spring Security
+        if (userDetails != null) {
             model.addAttribute("loggedIn", true);
-            model.addAttribute("userName", session.getAttribute("userName"));
+            model.addAttribute("userName", userDetails.getUsername());
+
+            // Количество товаров в корзине через Spring Security
+            int cartItemsCount = cartService.getCartItemCount(userDetails.getUsername());
+            model.addAttribute("cartItemsCount", cartItemsCount);
         } else {
             model.addAttribute("loggedIn", false);
+            model.addAttribute("cartItemsCount", 0);
         }
-
-        // Количество товаров в корзине
-        String sessionId = cartService.getOrCreateSessionId(session);
-        int cartItemsCount = cartService.getCartItemsCount(sessionId);
-        model.addAttribute("cartItemsCount", cartItemsCount);
 
         return "about";
     }

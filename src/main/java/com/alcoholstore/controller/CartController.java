@@ -1,104 +1,106 @@
 package com.alcoholstore.controller;
 
-import com.alcoholstore.model.Product;
-import com.alcoholstore.repository.ProductRepository;
-import jakarta.servlet.http.HttpSession;
+import com.alcoholstore.model.Cart;
+import com.alcoholstore.service.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
-
 @Controller
+@RequestMapping("/cart")
 public class CartController {
 
     @Autowired
-    private ProductRepository productRepository;
+    private CartService cartService;
 
-    @GetMapping("/cart")
-    public String viewCart(HttpSession session, Model model) {
-        // Получаем корзину из сессии
-        Object cartObj = session.getAttribute("cart");
-
-        if (cartObj == null) {
-            // Если корзины нет, создаем пустую
-            model.addAttribute("cart", new HashMap<Product, Integer>());
-            model.addAttribute("total", BigDecimal.ZERO);
-        } else {
-            // Если есть, преобразуем в Map
-            Map<Product, Integer> cart = (Map<Product, Integer>) cartObj;
-            BigDecimal total = calculateTotal(cart);
-            model.addAttribute("cart", cart);
-            model.addAttribute("total", total);
+    // Показать корзину
+    @GetMapping("")
+    public String viewCart(@AuthenticationPrincipal UserDetails userDetails, Model model) {
+        if (userDetails == null) {
+            return "redirect:/login";
         }
+
+        Cart cart = cartService.getCart(userDetails.getUsername());
+        model.addAttribute("cart", cart);
+        model.addAttribute("title", "Корзина");
+
         return "cart";
     }
 
-    @PostMapping("/cart/add")
+    // Добавить товар в корзину
+    @PostMapping("/add")
     public String addToCart(@RequestParam Long productId,
-                            @RequestParam Integer quantity,
-                            HttpSession session,
+                            @RequestParam(defaultValue = "1") Integer quantity,
+                            @AuthenticationPrincipal UserDetails userDetails,
                             RedirectAttributes redirectAttributes) {
-        // Получаем продукт из базы данных
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Товар не найден"));
-
-        // Получаем или создаем корзину в сессии
-        Map<Product, Integer> cart = (Map<Product, Integer>) session.getAttribute("cart");
-        if (cart == null) {
-            cart = new HashMap<>();
-            session.setAttribute("cart", cart);
+        if (userDetails == null) {
+            return "redirect:/login";
         }
 
-        // Добавляем или обновляем количество товара
-        int currentQuantity = cart.getOrDefault(product, 0);
-        cart.put(product, currentQuantity + quantity);
+        try {
+            cartService.addToCart(userDetails.getUsername(), productId, quantity);
+            redirectAttributes.addFlashAttribute("success", "Товар добавлен в корзину!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Ошибка: " + e.getMessage());
+        }
 
-        redirectAttributes.addFlashAttribute("message", "Товар добавлен в корзину!");
-        return "redirect:/catalog";
+        return "redirect:/cart";
     }
 
-    @PostMapping("/cart/remove")
-    public String removeFromCart(@RequestParam Long productId,
-                                 HttpSession session,
+    // Удалить товар из корзины
+    @PostMapping("/remove/{productId}")
+    public String removeFromCart(@PathVariable Long productId,
+                                 @AuthenticationPrincipal UserDetails userDetails,
                                  RedirectAttributes redirectAttributes) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Товар не найден"));
-
-        Map<Product, Integer> cart = (Map<Product, Integer>) session.getAttribute("cart");
-        if (cart != null) {
-            cart.remove(product);
-            if (cart.isEmpty()) {
-                session.removeAttribute("cart");
-            }
+        if (userDetails == null) {
+            return "redirect:/login";
         }
 
-        redirectAttributes.addFlashAttribute("message", "Товар удален из корзины");
+        try {
+            cartService.removeFromCart(userDetails.getUsername(), productId);
+            redirectAttributes.addFlashAttribute("success", "Товар удален из корзины!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Ошибка: " + e.getMessage());
+        }
+
         return "redirect:/cart";
     }
 
-    @PostMapping("/cart/clear")
-    public String clearCart(HttpSession session, RedirectAttributes redirectAttributes) {
-        session.removeAttribute("cart");
-        redirectAttributes.addFlashAttribute("message", "Корзина очищена");
+    // Обновить количество
+    @PostMapping("/update/{productId}")
+    public String updateQuantity(@PathVariable Long productId,
+                                 @RequestParam Integer quantity,
+                                 @AuthenticationPrincipal UserDetails userDetails,
+                                 RedirectAttributes redirectAttributes) {
+        if (userDetails == null) {
+            return "redirect:/login";
+        }
+
+        try {
+            cartService.updateQuantity(userDetails.getUsername(), productId, quantity);
+            redirectAttributes.addFlashAttribute("success", "Количество обновлено!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Ошибка: " + e.getMessage());
+        }
+
         return "redirect:/cart";
     }
 
-    private BigDecimal calculateTotal(Map<Product, Integer> cart) {
-        if (cart == null || cart.isEmpty()) {
-            return BigDecimal.ZERO;
+    // Очистить корзину
+    @PostMapping("/clear")
+    public String clearCart(@AuthenticationPrincipal UserDetails userDetails,
+                            RedirectAttributes redirectAttributes) {
+        if (userDetails == null) {
+            return "redirect:/login";
         }
 
-        BigDecimal total = BigDecimal.ZERO;
-        for (Map.Entry<Product, Integer> entry : cart.entrySet()) {
-            BigDecimal itemTotal = entry.getKey().getPrice()
-                    .multiply(BigDecimal.valueOf(entry.getValue()));
-            total = total.add(itemTotal);
-        }
-        return total;
+        cartService.clearCart(userDetails.getUsername());
+        redirectAttributes.addFlashAttribute("success", "Корзина очищена!");
+
+        return "redirect:/cart";
     }
 }
