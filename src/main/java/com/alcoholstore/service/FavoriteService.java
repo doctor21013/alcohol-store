@@ -26,10 +26,8 @@ public class FavoriteService {
 
     // Добавить в избранное
     public Favorite addToFavorites(Long userId, Long productId) {
-        User user = userService.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-        Product product = productService.getProductById(productId)
-                .orElseThrow(() -> new RuntimeException("Товар не найден"));
+        User user = userService.getUserByIdOrThrow(userId);
+        Product product = productService.getProductByIdOrThrow(productId);
 
         // Проверяем, есть ли уже в избранном
         Optional<Favorite> existingFavorite = favoriteRepository.findByUserAndProduct(user, product);
@@ -43,35 +41,29 @@ public class FavoriteService {
 
     // Удалить из избранного
     public void removeFromFavorites(Long userId, Long productId) {
-        User user = userService.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-        Product product = productService.getProductById(productId)
-                .orElseThrow(() -> new RuntimeException("Товар не найден"));
+        User user = userService.getUserByIdOrThrow(userId);
+        Product product = productService.getProductByIdOrThrow(productId);
 
         favoriteRepository.deleteByUserAndProduct(user, product);
     }
 
     // Получить все избранное пользователя
     public List<Product> getUserFavorites(Long userId) {
-        User user = userService.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        User user = userService.getUserByIdOrThrow(userId);
         return favoriteRepository.findFavoriteProductsByUser(user);
     }
 
     // Проверить, находится ли товар в избранном
     public boolean isProductInFavorites(Long userId, Long productId) {
-        User user = userService.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-        Product product = productService.getProductById(productId)
-                .orElseThrow(() -> new RuntimeException("Товар не найден"));
+        User user = userService.getUserByIdOrThrow(userId);
+        Product product = productService.getProductByIdOrThrow(productId);
 
         return favoriteRepository.existsByUserAndProduct(user, product);
     }
 
     // Получить количество избранных товаров
     public int getFavoriteCount(Long userId) {
-        User user = userService.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        User user = userService.getUserByIdOrThrow(userId);
         return favoriteRepository.countByUser(user);
     }
 }

@@ -1,8 +1,7 @@
 package com.alcoholstore.controller;
 
 import com.alcoholstore.model.User;
-import com.alcoholstore.service.UserService;
-import jakarta.servlet.http.HttpSession;
+import com.alcoholstore.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -12,21 +11,19 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Optional;
-
 @Controller
 @RequestMapping("/profile")
 public class ProfileController {
 
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     // Просмотр профиля
     @GetMapping
-    public String viewProfile(HttpSession session, Model model) {
+    public String viewProfile(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
@@ -35,13 +32,11 @@ public class ProfileController {
             return "redirect:/login";
         }
 
-        Optional<User> userOptional = userService.findByUsername(username);
+        User user = userRepository.findByUsername(username);
 
-        if (userOptional.isEmpty()) {
+        if (user == null) {
             return "redirect:/login?error=user_not_found";
         }
-
-        User user = userOptional.get();
 
         model.addAttribute("user", user);
         return "profile";
@@ -49,7 +44,7 @@ public class ProfileController {
 
     // Форма редактирования профиля
     @GetMapping("/edit")
-    public String editProfileForm(HttpSession session, Model model) {
+    public String editProfileForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
@@ -57,47 +52,44 @@ public class ProfileController {
             return "redirect:/login";
         }
 
-        Optional<User> userOptional = userService.findByUsername(username);
+        User user = userRepository.findByUsername(username);
 
-        if (userOptional.isEmpty()) {
+        if (user == null) {
             return "redirect:/login?error=user_not_found";
         }
 
-        User user = userOptional.get();
         model.addAttribute("user", user);
         return "profile-edit";
     }
 
-    // Сохранение изменений профиля
+    // Сохранение изменений профиля (только email)
     @PostMapping("/update")
-    public String updateProfile(@RequestParam String fullName,
-                                @RequestParam String email,
-                                @RequestParam(required = false) String phone,
-                                HttpSession session,
+    public String updateProfile(@RequestParam String email,
                                 RedirectAttributes redirectAttributes) {
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
         try {
-            Optional<User> userOptional = userService.findByUsername(username);
+            User user = userRepository.findByUsername(username);
 
-            if (userOptional.isEmpty()) {
+            if (user == null) {
                 redirectAttributes.addFlashAttribute("error", "Пользователь не найден");
                 return "redirect:/login";
             }
 
-            User user = userOptional.get();
-
-            // Обновляем данные пользователя
-            user.setFullName(fullName);
-            user.setEmail(email);
-            if (phone != null && !phone.trim().isEmpty()) {
-                user.setPhone(phone);
+            // Проверяем, не занят ли email другим пользователем
+            User existingUserWithEmail = userRepository.findByEmail(email);
+            if (existingUserWithEmail != null && !existingUserWithEmail.getId().equals(user.getId())) {
+                redirectAttributes.addFlashAttribute("error", "Этот email уже используется другим пользователем");
+                return "redirect:/profile/edit";
             }
 
-            // Сохраняем изменения с помощью saveUser (а не updateUser)
-            userService.saveUser(user);
+            // Обновляем email
+            user.setEmail(email);
+
+            // Сохраняем изменения
+            userRepository.save(user);
 
             redirectAttributes.addFlashAttribute("success", "Профиль успешно обновлен!");
         } catch (Exception e) {
@@ -109,7 +101,7 @@ public class ProfileController {
 
     // Форма смены пароля
     @GetMapping("/change-password")
-    public String changePasswordForm(HttpSession session, Model model) {
+    public String changePasswordForm() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
@@ -124,7 +116,6 @@ public class ProfileController {
     public String changePassword(@RequestParam String currentPassword,
                                  @RequestParam String newPassword,
                                  @RequestParam String confirmPassword,
-                                 HttpSession session,
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
 
@@ -132,16 +123,14 @@ public class ProfileController {
         String username = auth.getName();
 
         try {
-            Optional<User> userOptional = userService.findByUsername(username);
+            User user = userRepository.findByUsername(username);
 
-            if (userOptional.isEmpty()) {
+            if (user == null) {
                 model.addAttribute("error", "Пользователь не найден");
                 return "change-password";
             }
 
-            User user = userOptional.get();
-
-            // Проверяем текущий пароль с помощью PasswordEncoder
+            // Проверяем текущий пароль
             if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
                 model.addAttribute("error", "Текущий пароль неверен");
                 return "change-password";
@@ -153,9 +142,9 @@ public class ProfileController {
                 return "change-password";
             }
 
-            // Обновляем пароль с шифрованием
+            // Обновляем пароль
             user.setPassword(passwordEncoder.encode(newPassword));
-            userService.saveUser(user);
+            userRepository.save(user);
 
             redirectAttributes.addFlashAttribute("success", "Пароль успешно изменен!");
             return "redirect:/profile";

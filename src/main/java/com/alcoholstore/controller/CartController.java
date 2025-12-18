@@ -45,7 +45,7 @@ public class CartController {
                             RedirectAttributes redirectAttributes) {
         // Получаем продукт из базы данных
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid product Id:" + productId));
+                .orElseThrow(() -> new IllegalArgumentException("Товар не найден"));
 
         // Получаем или создаем корзину в сессии
         Map<Product, Integer> cart = (Map<Product, Integer>) session.getAttribute("cart");
@@ -59,14 +59,15 @@ public class CartController {
         cart.put(product, currentQuantity + quantity);
 
         redirectAttributes.addFlashAttribute("message", "Товар добавлен в корзину!");
-        return "redirect:/products";
+        return "redirect:/catalog";
     }
 
     @PostMapping("/cart/remove")
     public String removeFromCart(@RequestParam Long productId,
-                                 HttpSession session) {
+                                 HttpSession session,
+                                 RedirectAttributes redirectAttributes) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid product Id:" + productId));
+                .orElseThrow(() -> new IllegalArgumentException("Товар не найден"));
 
         Map<Product, Integer> cart = (Map<Product, Integer>) session.getAttribute("cart");
         if (cart != null) {
@@ -76,12 +77,14 @@ public class CartController {
             }
         }
 
+        redirectAttributes.addFlashAttribute("message", "Товар удален из корзины");
         return "redirect:/cart";
     }
 
     @PostMapping("/cart/clear")
-    public String clearCart(HttpSession session) {
+    public String clearCart(HttpSession session, RedirectAttributes redirectAttributes) {
         session.removeAttribute("cart");
+        redirectAttributes.addFlashAttribute("message", "Корзина очищена");
         return "redirect:/cart";
     }
 
@@ -92,9 +95,9 @@ public class CartController {
 
         BigDecimal total = BigDecimal.ZERO;
         for (Map.Entry<Product, Integer> entry : cart.entrySet()) {
-            BigDecimal productTotal = entry.getKey().getPrice()
+            BigDecimal itemTotal = entry.getKey().getPrice()
                     .multiply(BigDecimal.valueOf(entry.getValue()));
-            total = total.add(productTotal);
+            total = total.add(itemTotal);
         }
         return total;
     }

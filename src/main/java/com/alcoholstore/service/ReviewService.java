@@ -7,7 +7,6 @@ import com.alcoholstore.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ReviewService {
@@ -40,7 +39,12 @@ public class ReviewService {
 
     public Review addReview(Long productId, Long userId, Integer rating, String text) {
         User user = userService.getUserByIdOrThrow(userId);
-        Product product = productService.getProductByIdOrThrow(productId);
+
+        // Исправлено: используем getProductById и проверяем на null
+        Product product = productService.getProductById(productId);
+        if (product == null) {
+            throw new RuntimeException("Товар не найден с ID: " + productId);
+        }
 
         Review review = new Review();
         review.setUser(user);

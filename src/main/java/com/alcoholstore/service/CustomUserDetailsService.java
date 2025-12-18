@@ -19,11 +19,18 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден: " + username));
+        User user = userRepository.findByUsername(username);
 
-        // Определяем роль пользователя
-        String role = user.isAdmin() ? "ROLE_ADMIN" : "ROLE_USER";
+        if (user == null) {
+            throw new UsernameNotFoundException("Пользователь не найден: " + username);
+        }
+
+        // Используем поле role напрямую, так как у вас есть метод getRole()
+        // Если у вас нет метода isAdmin(), используем getRole()
+        String role = user.getRole();
+        if (role == null) {
+            role = "ROLE_USER"; // Назначаем роль по умолчанию
+        }
 
         List<SimpleGrantedAuthority> authorities = Collections.singletonList(
                 new SimpleGrantedAuthority(role)

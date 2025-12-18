@@ -76,55 +76,18 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <nav class="col-md-3 col-lg-2 sidebar d-md-block">
-            <div class="position-sticky pt-4">
-                <div class="px-3 mb-4">
-                    <h4 class="text-white">
-                        <i class="fas fa-crown me-2"></i>Админ-панель
-                    </h4>
-                    <p class="text-light small mb-0">
-                        <i class="fas fa-user me-1"></i>
-                        <span sec:authentication="name"></span>
-                    </p>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+                <a class="navbar-brand" th:href="@{/}">Alcohol Store</a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" th:href="@{/products}">Товары</a>
+                    <a class="nav-link" th:href="@{/cart}">Корзина</a>
+                    <a class="nav-link" th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Админ панель</a>
+                    <a class="nav-link" th:href="@{/profile}">Личный кабинет</a>
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="btn btn-link nav-link">Выйти</button>
+                    </form>
                 </div>
-
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/admin/dashboard}">
-                            <i class="fas fa-tachometer-alt"></i> Дашборд
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/products}">
-                            <i class="fas fa-wine-bottle"></i> Товары
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/orders}">
-                            <i class="fas fa-shopping-cart"></i> Заказы
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/users}">
-                            <i class="fas fa-users"></i> Пользователи
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/reviews}">
-                            <i class="fas fa-star"></i> Отзывы
-                        </a>
-                    </li>
-                    <li class="nav-item mt-4">
-                        <a class="nav-link text-warning" href="/">
-                            <i class="fas fa-store"></i> Вернуться в магазин
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-danger" href="/logout">
-                            <i class="fas fa-sign-out-alt"></i> Выйти
-                        </a>
-                    </li>
-                </ul>
             </div>
         </nav>
 

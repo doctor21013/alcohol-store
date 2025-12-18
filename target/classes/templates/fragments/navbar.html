@@ -54,7 +54,7 @@
 
             <span sec:authorize="isAuthenticated()">
                 <span style="margin-right: 15px;">Привет, <strong sec:authentication="name"></strong>!</span>
-                <a href="/logout" style="color: white; text-decoration: none; background: #e74c3c; padding: 8px 15px; border-radius: 5px;">Выйти</a>
+                <a href="/" style="color: white; text-decoration: none; background: #e74c3c; padding: 8px 15px; border-radius: 5px;">Выйти</a>
             </span>
 
             <span sec:authorize="!isAuthenticated()">

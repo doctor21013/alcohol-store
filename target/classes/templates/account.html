@@ -2,269 +2,57 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет | Alcohol Store</title>
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #e74c3c;
-        }
-
-        body {
-            background-color: #f8f9fa;
-            padding-top: 80px;
-        }
-
-        .profile-card {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .profile-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .avatar {
-            width: 120px;
-            height: 120px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 3rem;
-            color: white;
-        }
-
-        .admin-badge {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-weight: 600;
-            display: inline-block;
-            margin-top: 10px;
-        }
-
-        .info-card {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .quick-actions {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-        }
-
-        .btn-admin {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-
-        .btn-admin:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(240, 147, 251, 0.3);
-            color: white;
-        }
-    </style>
 </head>
 <body>
-<!-- Навигация -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: var(--primary-color);">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-wine-bottle me-2"></i>Alcohol Store
-        </a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">Главная</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/catalog">Каталог</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/cart">
-                        <i class="fas fa-shopping-cart"></i>
-                        Корзина
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="/account">
-                        <i class="fas fa-user"></i>
-                        Кабинет
-                    </a>
-                </li>
-            </ul>
-            <div class="d-flex align-items-center">
-                    <span class="text-white me-3">
-                        <i class="fas fa-user me-1"></i>
-                        <span th:text="${username}"></span>
-                    </span>
-                <a href="/logout" class="btn btn-outline-light">
-                    <i class="fas fa-sign-out-alt"></i>
-                </a>
-            </div>
+        <a class="navbar-brand" th:href="@{/}">Alcohol Store</a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" th:href="@{/products}">Товары</a>
+            <a class="nav-link" th:href="@{/cart}">Корзина</a>
+            <a class="nav-link" th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Админ панель</a>
+            <a class="nav-link" th:href="@{/account}">Личный кабинет</a>
+            <form th:action="@{/logout}" method="post">
+                <button type="submit" class="btn btn-link nav-link">Выйти</button>
+            </form>
         </div>
     </div>
 </nav>
 
-<!-- Основной контент -->
-<div class="container py-4">
-    <div class="row">
-        <div class="col-lg-4">
-            <!-- Профиль -->
-            <div class="profile-card">
-                <div class="profile-header">
-                    <div class="avatar">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <h3 th:text="${fullName != null and not fullName.isEmpty() ? fullName : username}"></h3>
-                    <p class="text-muted" th:text="${email}"></p>
+<div class="container mt-4">
+    <h1>Личный кабинет</h1>
 
-                    <div th:if="${isAdmin}" class="admin-badge">
-                        <i class="fas fa-crown me-2"></i>АДМИНИСТРАТОР
-                    </div>
-                    <div th:unless="${isAdmin}" class="badge bg-primary">
-                        <i class="fas fa-user me-2"></i>ПОЛЬЗОВАТЕЛЬ
-                    </div>
-                </div>
+    <div th:if="${message}" class="alert alert-success">
+        <span th:text="${message}"></span>
+    </div>
 
-                <div class="info-card">
-                    <h5><i class="fas fa-id-card me-2"></i>Информация</h5>
-                    <hr>
-                    <p><strong>Имя пользователя:</strong> <span th:text="${username}"></span></p>
-                    <p><strong>Email:</strong> <span th:text="${email}"></span></p>
-                    <p th:if="${phone != null and not phone.isEmpty()}">
-                        <strong>Телефон:</strong> <span th:text="${phone}"></span>
-                    </p>
-                    <p th:if="${fullName != null and not fullName.isEmpty()}">
-                        <strong>Полное имя:</strong> <span th:text="${fullName}"></span>
-                    </p>
-                </div>
-
-                <div class="quick-actions">
-                    <h5><i class="fas fa-bolt me-2"></i>Быстрые действия</h5>
-                    <hr>
-                    <div class="d-grid gap-2">
-                        <a href="/catalog" class="btn btn-primary">
-                            <i class="fas fa-store me-2"></i>Перейти в магазин
-                        </a>
-                        <a href="/cart" class="btn btn-outline-primary">
-                            <i class="fas fa-shopping-cart me-2"></i>Моя корзина
-                        </a>
-                        <a href="/" class="btn btn-outline-secondary">
-                            <i class="fas fa-home me-2"></i>На главную
-                        </a>
-                    </div>
-                </div>
-            </div>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Информация о пользователе</h5>
+            <p><strong>Имя пользователя:</strong> <span th:text="${user.username}"></span></p>
+            <p><strong>Email:</strong> <span th:text="${user.email}"></span></p>
         </div>
+    </div>
 
-        <div class="col-lg-8">
-            <!-- Для админа -->
-            <div th:if="${isAdmin}" class="profile-card">
-                <h3><i class="fas fa-crown me-2 text-warning"></i>Панель администратора</h3>
-                <p class="text-muted">У вас есть права администратора. Доступные функции:</p>
-
-                <div class="row mt-4">
-                    <div class="col-md-6 mb-3">
-                        <div class="info-card">
-                            <h5><i class="fas fa-wine-bottle me-2"></i>Управление товарами</h5>
-                            <p class="text-muted">Добавление, редактирование и удаление товаров</p>
-                            <a th:href="@{/admin/products}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-arrow-right me-1"></i>Перейти
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <div class="info-card">
-                            <h5><i class="fas fa-shopping-cart me-2"></i>Управление заказами</h5>
-                            <p class="text-muted">Просмотр и изменение статусов заказов</p>
-                            <a th:href="@{/admin/orders}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-arrow-right me-1"></i>Перейти
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <div class="info-card">
-                            <h5><i class="fas fa-users me-2"></i>Управление пользователями</h5>
-                            <p class="text-muted">Просмотр списка пользователей и управление правами</p>
-                            <a th:href="@{/admin/users}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-arrow-right me-1"></i>Перейти
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <div class="info-card">
-                            <h5><i class="fas fa-chart-line me-2"></i>Статистика</h5>
-                            <p class="text-muted">Просмотр статистики магазина и аналитика</p>
-                            <a th:href="@{/admin/dashboard}" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-arrow-right me-1"></i>Перейти
-                            </a>
-                        </div>
-                    </div>
+    <div class="card mt-3">
+        <div class="card-body">
+            <h5 class="card-title">Изменить данные</h5>
+            <form th:action="@{/account/update}" method="post">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Новый email</label>
+                    <input type="email" class="form-control" id="email" name="email" th:value="${user.email}" required>
                 </div>
-
-                <div class="text-center mt-4">
-                    <a th:href="@{/admin/dashboard}" class="btn-admin">
-                        <i class="fas fa-tachometer-alt me-2"></i>Перейти в админ-панель
-                    </a>
+                <div class="mb-3">
+                    <label for="newPassword" class="form-label">Новый пароль (оставьте пустым, если не хотите менять)</label>
+                    <input type="password" class="form-control" id="newPassword" name="newPassword">
                 </div>
-            </div>
-
-            <!-- Для обычных пользователей -->
-            <div th:unless="${isAdmin}" class="profile-card">
-                <h3><i class="fas fa-user me-2"></i>Ваши данные</h3>
-                <p class="text-muted">Здесь вы можете управлять своей учетной записью</p>
-
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    В будущем здесь будет доступна история заказов, избранные товары и настройки аккаунта.
-                </div>
-
-                <div class="row mt-4">
-                    <div class="col-md-6">
-                        <div class="info-card">
-                            <h5><i class="fas fa-history me-2"></i>История заказов</h5>
-                            <p class="text-muted">Скоро здесь появится ваша история покупок</p>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="info-card">
-                            <h5><i class="fas fa-heart me-2"></i>Избранное</h5>
-                            <p class="text-muted">Скоро здесь появится список избранных товаров</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+            </form>
         </div>
     </div>
 </div>
-
-<!-- Скрипты -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

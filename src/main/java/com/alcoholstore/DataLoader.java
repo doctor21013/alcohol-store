@@ -1,4 +1,4 @@
-package com.alcoholstore.config;
+package com.alcoholstore;
 
 import com.alcoholstore.model.User;
 import com.alcoholstore.repository.UserRepository;
@@ -8,7 +8,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DataInitializer implements CommandLineRunner {
+public class DataLoader implements CommandLineRunner {
 
     @Autowired
     private UserRepository userRepository;
@@ -22,28 +22,26 @@ public class DataInitializer implements CommandLineRunner {
         if (userRepository.findByUsername("admin") == null) {
             User admin = new User();
             admin.setUsername("admin");
-            admin.setEmail("admin@alcoholstore.ru");
             admin.setPassword(passwordEncoder.encode("admin123"));
-            admin.setRole("ROLE_ADMIN"); // Используем поле role вместо isAdmin
+            admin.setEmail("admin@store.com");
+            admin.setRole("ROLE_ADMIN");
             admin.setEnabled(true);
+
             userRepository.save(admin);
-            System.out.println("✅ Создан администратор: admin / admin123");
+            System.out.println("Создан администратор: admin / admin123");
         }
 
         // Создаем тестового пользователя
         if (userRepository.findByUsername("user") == null) {
             User user = new User();
             user.setUsername("user");
-            user.setEmail("user@example.com");
             user.setPassword(passwordEncoder.encode("user123"));
-            user.setRole("ROLE_USER"); // Обычный пользователь
+            user.setEmail("user@store.com");
+            user.setRole("ROLE_USER");
             user.setEnabled(true);
-            userRepository.save(user);
-            System.out.println("✅ Создан тестовый пользователь: user / user123");
-        }
 
-        System.out.println("🎯 Для входа используйте:");
-        System.out.println("   Админ: admin / admin123");
-        System.out.println("   Пользователь: user / user123");
+            userRepository.save(user);
+            System.out.println("Создан пользователь: user / user123");
+        }
     }
 }

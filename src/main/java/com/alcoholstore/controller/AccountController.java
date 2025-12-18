@@ -1,7 +1,7 @@
 package com.alcoholstore.controller;
 
 import com.alcoholstore.model.User;
-import com.alcoholstore.service.UserService;
+import com.alcoholstore.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,28 +13,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class AccountController {
 
     @Autowired
-    private UserService userService;
+    private UserRepository userRepository;
 
     @GetMapping("/account")
-    public String account(Model model) {
+    public String viewAccount(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
 
-        // Проверяем, что пользователь не анонимный
-        if (username.equals("anonymousUser")) {
-            return "redirect:/login";
+        User user = userRepository.findByUsername(username);
+
+        if (user == null) {
+            return "redirect:/login?error=user_not_found";
         }
 
-        User user = userService.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-
         model.addAttribute("user", user);
-        model.addAttribute("username", user.getUsername());
-        model.addAttribute("isAdmin", user.isAdmin());
-        model.addAttribute("email", user.getEmail());
-        model.addAttribute("fullName", user.getFullName());
-        model.addAttribute("phone", user.getPhone());
-
         return "account";
     }
 }

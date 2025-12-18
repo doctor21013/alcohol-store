@@ -1,11 +1,16 @@
 package com.alcoholstore.model;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.Collection;
+import java.util.Collections;
 
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -14,81 +19,105 @@ public class User {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @Column(unique = true, nullable = false)
-    private String email;
-
     @Column(nullable = false)
     private String password;
 
-    @Column(name = "is_admin")
-    private Boolean isAdmin = false;
+    @Column(unique = true)
+    private String email;
 
-    @Column(name = "full_name")
-    private String fullName;
+    @Column(name = "role")
+    private String role;
 
-    @Column(name = "phone")
-    private String phone;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        if (isAdmin == null) {
-            isAdmin = false;
-        }
-        if (fullName == null) {
-            fullName = "";
-        }
-        if (phone == null) {
-            phone = "";
-        }
-    }
+    @Column(name = "enabled")
+    private Boolean enabled = true; // Изменено с boolean на Boolean
 
     // Конструкторы
     public User() {}
 
-    public User(String username, String email, String password, Boolean isAdmin) {
+    public User(String username, String email, String password, String role) {
         this.username = username;
         this.email = email;
         this.password = password;
-        this.isAdmin = isAdmin;
+        this.role = role;
     }
 
     // Геттеры и сеттеры
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public Boolean getIsAdmin() { return isAdmin; }
-    public void setIsAdmin(Boolean isAdmin) {
-        this.isAdmin = isAdmin != null ? isAdmin : false;
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singletonList(new SimpleGrantedAuthority(role));
     }
 
-    public String getFullName() { return fullName; }
-    public void setFullName(String fullName) {
-        this.fullName = fullName != null ? fullName : "";
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) {
-        this.phone = phone != null ? phone : "";
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
     }
 
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
-    // Удобный метод
+    @Override
+    public boolean isEnabled() {
+        return enabled != null ? enabled : true; // Защита от null
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Boolean getEnabled() { // Геттер для Boolean
+        return enabled;
+    }
+
+    public void setEnabled(Boolean enabled) { // Сеттер для Boolean
+        this.enabled = enabled;
+    }
+
+    // Удобный метод для проверки роли администратора
     public boolean isAdmin() {
-        return isAdmin != null && isAdmin;
+        return "ROLE_ADMIN".equals(role);
     }
 }

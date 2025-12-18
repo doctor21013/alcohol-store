@@ -20,9 +20,6 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private CartService cartService;
-
     // Создать заказ из корзины
     @Transactional
     public Order createOrderFromCart(Cart cart,
@@ -72,10 +69,11 @@ public class OrderService {
 
     // Получить заказы пользователя
     public List<Order> getOrdersByUsername(String username) {
-        Optional<User> user = userRepository.findByUsername(username);
-        if (user.isPresent()) {
-            return orderRepository.findByUserOrderByOrderDateDesc(user.get());
+        User user = userRepository.findByUsername(username);
+        if (user != null) {
+            return orderRepository.findByUserOrderByOrderDateDesc(user);
         }
+        // Если пользователь не найден, попробуем найти по email
         return orderRepository.findByCustomerEmailOrderByOrderDateDesc(username);
     }
 

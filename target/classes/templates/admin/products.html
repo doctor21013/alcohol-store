@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,41 +26,18 @@
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <nav class="col-md-2 d-none d-md-block sidebar">
-            <div class="position-sticky pt-3">
-                <h5 class="text-white text-center my-3">Админ-панель</h5>
-                <ul class="nav flex-column">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/dashboard}">
-                            <i class="fas fa-tachometer-alt"></i> Дашборд
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/admin/products}">
-                            <i class="fas fa-wine-bottle"></i> Товары
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/users}">
-                            <i class="fas fa-users"></i> Пользователи
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/admin/orders}">
-                            <i class="fas fa-shopping-cart"></i> Заказы
-                        </a>
-                    </li>
-                    <li class="nav-item mt-4">
-                        <a class="nav-link text-warning" th:href="@{/}">
-                            <i class="fas fa-store"></i> Вернуться в магазин
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link text-danger" th:href="@{/logout}">
-                            <i class="fas fa-sign-out-alt"></i> Выйти
-                        </a>
-                    </li>
-                </ul>
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <div class="container">
+                <a class="navbar-brand" th:href="@{/}">Alcohol Store</a>
+                <div class="navbar-nav ms-auto">
+                    <a class="nav-link" th:href="@{/products}">Товары</a>
+                    <a class="nav-link" th:href="@{/cart}">Корзина</a>
+                    <a class="nav-link" th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Админ панель</a>
+                    <a class="nav-link" th:href="@{/account}">Личный кабинет</a>
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="btn btn-link nav-link">Выйти</button>
+                    </form>
+                </div>
             </div>
         </nav>
 
@@ -80,6 +57,7 @@
                     <a th:href="@{/admin/products/new}" class="btn btn-success">
                         <i class="fas fa-plus"></i> Добавить товар
                     </a>
+                    <a class="nav-link" th:href="@{/profile}">Личный кабинет</a>
                 </div>
             </div>
 

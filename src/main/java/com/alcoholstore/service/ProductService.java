@@ -5,7 +5,6 @@ import com.alcoholstore.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ProductService {
@@ -17,14 +16,8 @@ public class ProductService {
         return productRepository.findAll();
     }
 
-    public Optional<Product> getProductById(Long id) {
-        return productRepository.findById(id);
-    }
-
-    // Исправленный метод (без дубликата)
-    public Product getProductByIdOrThrow(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Продукт не найден"));
+    public Product getProductById(Long id) {
+        return productRepository.findById(id).orElse(null);
     }
 
     public Product saveProduct(Product product) {
@@ -35,7 +28,12 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    public List<Product> searchProducts(String keyword) {
-        return productRepository.findByNameContainingIgnoreCase(keyword);
+    // Добавлен метод для выброса исключения, если товар не найден
+    public Product getProductByIdOrThrow(Long id) {
+        Product product = getProductById(id);
+        if (product == null) {
+            throw new RuntimeException("Товар не найден с ID: " + id);
+        }
+        return product;
     }
 }

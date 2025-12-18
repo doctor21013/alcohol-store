@@ -17,17 +17,17 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Найти пользователя по имени пользователя
-    public Optional<User> findByUsername(String username) {
+    // Найти пользователя по имени пользователя (возвращает User)
+    public User findByUsername(String username) {
         return userRepository.findByUsername(username);
     }
 
-    // Найти пользователя по email
-    public Optional<User> findByEmail(String email) {
+    // Найти пользователя по email (возвращает User)
+    public User findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
-    // Получить пользователя по ID
+    // Получить пользователя по ID (возвращает Optional, так как это стандартный метод JpaRepository)
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
@@ -37,6 +37,7 @@ public class UserService {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с ID: " + id));
     }
+
 
     // Получить всех пользователей
     public List<User> getAllUsers() {
@@ -60,12 +61,12 @@ public class UserService {
 
     // Проверить существование пользователя по email
     public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
+        return userRepository.findByEmail(email) != null;
     }
 
     // Проверить существование пользователя по username
     public boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
+        return userRepository.findByUsername(username) != null;
     }
 
     // Удалить пользователя
@@ -73,8 +74,19 @@ public class UserService {
         userRepository.deleteById(id);
     }
 
-    // Получить пользователя по имени пользователя (синоним для findByUsername)
-    public Optional<User> getUserByUsername(String username) {
+    // Получить пользователя по имени пользователя (возвращает User)
+    public User getUserByUsername(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    // Создать нового пользователя
+    public User createUser(String username, String password, String email, String role) {
+        User user = new User();
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setEmail(email);
+        user.setRole(role);
+        user.setEnabled(true);
+        return userRepository.save(user);
     }
 }
