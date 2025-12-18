@@ -66,18 +66,21 @@ public class OrderController {
         model.addAttribute("totalPrice", totalPrice);
         model.addAttribute("userName", session.getAttribute("userName"));
         model.addAttribute("userEmail", session.getAttribute("userEmail"));
+        model.addAttribute("userPhone", session.getAttribute("userPhone")); // Добавляем телефон из сессии
         model.addAttribute("loggedIn", true);
 
         return "checkout";
     }
 
-    @PostMapping("/place")
+    // ========== СОЗДАНИЕ ЗАКАЗА ==========
+    @PostMapping("/create")
     public String placeOrder(@RequestParam String customerName,
                              @RequestParam String customerEmail,
                              @RequestParam String customerPhone,
                              @RequestParam String deliveryAddress,
                              @RequestParam(required = false) String notes,
-                             HttpSession session) {
+                             HttpSession session,
+                             Model model) {
 
         // Проверяем авторизацию
         if (session.getAttribute("userEmail") == null) {
@@ -87,24 +90,37 @@ public class OrderController {
         String sessionId = cartService.getOrCreateSessionId(session);
         BigDecimal totalAmount = cartService.getTotalPrice(sessionId);
 
-        // Создаем заказ
-        Order order = orderService.createOrderFromCart(
-                sessionId,
-                customerName,
-                customerEmail,
-                customerPhone,
-                deliveryAddress,
-                notes
-        );
+        // Проверяем, что корзина не пуста
+        var cartItems = cartService.getCartItems(sessionId);
+        if (cartItems.isEmpty()) {
+            model.addAttribute("error", "Корзина пуста");
+            return "redirect:/cart";
+        }
 
-        // Очищаем корзину
-        cartService.clearCart(sessionId);
+        try {
+            // Создаем заказ
+            Order order = orderService.createOrderFromCart(
+                    sessionId,
+                    customerName,
+                    customerEmail,
+                    customerPhone,
+                    deliveryAddress,
+                    notes
+            );
 
-        // Сохраняем номер заказа для страницы успеха
-        session.setAttribute("lastOrderNumber", order.getId());
-        session.setAttribute("lastOrderTotal", totalAmount);
+            // Очищаем корзину
+            cartService.clearCart(sessionId);
 
-        return "redirect:/orders/success";
+            // Сохраняем номер заказа для страницы успеха
+            session.setAttribute("lastOrderNumber", order.getId());
+            session.setAttribute("lastOrderTotal", totalAmount);
+
+            return "redirect:/orders/success";
+
+        } catch (Exception e) {
+            model.addAttribute("error", "Ошибка при оформлении заказа: " + e.getMessage());
+            return "redirect:/orders/checkout";
+        }
     }
 
     // ========== СТРАНИЦА УСПЕШНОГО ОФОРМЛЕНИЯ ==========
@@ -119,8 +135,9 @@ public class OrderController {
 
         model.addAttribute("orderNumber", orderNumber);
         model.addAttribute("orderTotal", orderTotal);
+        model.addAttribute("loggedIn", true);
 
-        // Очищаем сессию
+        // Очищаем сессию от временных данных
         session.removeAttribute("lastOrderNumber");
         session.removeAttribute("lastOrderTotal");
 
