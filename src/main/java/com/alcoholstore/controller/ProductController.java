@@ -60,21 +60,7 @@ public class ProductController {
     }
 
     // ========== ДОБАВЛЕНИЕ В КОРЗИНУ (через POST) ==========
-    @PostMapping("/products/add-to-cart")
-    public String addToCart(@RequestParam Long productId,
-                            @RequestParam(defaultValue = "1") Integer quantity,
-                            HttpSession session,
-                            RedirectAttributes redirectAttributes) {
 
-        try {
-            cartService.addToCart(session, productId, quantity);
-            redirectAttributes.addFlashAttribute("success", "Товар добавлен в корзину");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Ошибка при добавлении в корзину: " + e.getMessage());
-        }
-
-        return "redirect:/product/" + productId;
-    }
 
     // ========== БЫСТРОЕ ДОБАВЛЕНИЕ В КОРЗИНУ ИЗ КАТАЛОГА ==========
     @PostMapping("/cart/add-quick")

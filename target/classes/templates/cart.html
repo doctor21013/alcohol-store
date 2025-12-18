@@ -2,285 +2,87 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Корзина | Alcohol Store</title>
+    <title>Корзина</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #e74c3c;
-            --accent-color: #3498db;
-        }
-
-        body {
-            background-color: #f8f9fa;
-            padding-top: 80px;
-        }
-
-        .cart-item {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-        }
-
-        .cart-item-image {
-            width: 100px;
-            height: 100px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
-
-        .quantity-btn {
-            width: 35px;
-            height: 35px;
-            border: 1px solid #dee2e6;
-            background: white;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .quantity-input {
-            width: 60px;
-            text-align: center;
-            border: 1px solid #dee2e6;
-            border-radius: 5px;
-            padding: 5px;
-        }
-
-        .cart-summary {
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-            position: sticky;
-            top: 100px;
-        }
-
-        .btn-checkout {
-            background: linear-gradient(135deg, var(--secondary-color), #c0392b);
-            color: white;
-            padding: 12px;
-            font-weight: 600;
-            border-radius: 8px;
-            border: none;
-            width: 100%;
-        }
-
-        .empty-cart {
-            text-align: center;
-            padding: 60px 20px;
-        }
-
-        .empty-cart-icon {
-            font-size: 4rem;
-            color: #dee2e6;
-            margin-bottom: 20px;
-        }
-    </style>
 </head>
 <body>
-<!-- Навигация -->
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: var(--primary-color);">
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
     <div class="container">
-        <a class="navbar-brand" href="/">
-            <i class="fas fa-wine-bottle me-2"></i>Alcohol Store
-        </a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="/">Главная</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="/catalog">Каталог</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="/cart">
-                        <i class="fas fa-shopping-cart"></i>
-                        Корзина
-                        <span class="badge bg-danger" th:text="${cartItemCount}"></span>
-                    </a>
-                </li>
-            </ul>
-            <div class="d-flex align-items-center">
-                    <span sec:authorize="isAuthenticated()">
-                        <span class="text-white me-3">
-                            <i class="fas fa-user me-1"></i>
-                            <span sec:authentication="name"></span>
-                        </span>
-                        <a href="/logout" class="btn btn-outline-light">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </a>
-                    </span>
-                <span sec:authorize="!isAuthenticated()">
-                        <a href="/login" class="btn btn-outline-light me-2">Войти</a>
-                        <a href="/register" class="btn btn-light" style="color: var(--primary-color);">Регистрация</a>
-                    </span>
-            </div>
+        <a class="navbar-brand" th:href="@{/}">Alcohol Store</a>
+        <div class="navbar-nav ms-auto">
+            <a class="nav-link" th:href="@{/products}">Товары</a>
+            <a class="nav-link" th:href="@{/cart}">Корзина</a>
+            <a class="nav-link" th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Админ панель</a>
+            <form th:action="@{/logout}" method="post" th:if="${#authorization.expression('isAuthenticated()')}">
+                <button type="submit" class="btn btn-link nav-link">Выйти</button>
+            </form>
+            <a class="nav-link" th:href="@{/login}" th:unless="${#authorization.expression('isAuthenticated()')}">Войти</a>
         </div>
     </div>
 </nav>
 
-<!-- Сообщения -->
 <div class="container mt-4">
-    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
-        <span th:text="${success}"></span>
+    <h1>Корзина</h1>
+
+    <!-- Показываем сообщение об успешном добавлении -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${message}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
-    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
-        <span th:text="${error}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-</div>
 
-<!-- Основной контент -->
-<div class="container py-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <h2 class="mb-4">Ваша корзина</h2>
-
-            <div th:if="${cart == null or cart.items.empty}">
-                <div class="empty-cart">
-                    <div class="empty-cart-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <h3>Ваша корзина пуста</h3>
-                    <p class="text-muted">Добавьте товары из каталога, чтобы начать покупки</p>
-                    <a href="/catalog" class="btn btn-primary mt-3">
-                        <i class="fas fa-store me-2"></i>Перейти в каталог
-                    </a>
-                </div>
-            </div>
-
-            <div th:if="${cart != null and not cart.items.empty}">
-                <div class="cart-item" th:each="item : ${cart.items}">
-                    <div class="row align-items-center">
-                        <div class="col-md-2">
-                            <img th:src="${item.product.imageUrl}"
-                                 th:alt="${item.product.name}"
-                                 class="cart-item-image">
-                        </div>
-                        <div class="col-md-4">
-                            <h5 th:text="${item.product.name}"></h5>
-                            <p class="text-muted mb-0" th:text="${item.product.description}"></p>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="d-flex align-items-center">
-                                <form th:action="@{/cart/update}" method="post" class="d-flex">
-                                    <input type="hidden" name="productId" th:value="${item.product.id}">
-                                    <button type="button" class="quantity-btn minus" onclick="updateQuantity(this, -1)">
-                                        <i class="fas fa-minus"></i>
-                                    </button>
-                                    <input type="number" name="quantity"
-                                           th:value="${item.quantity}"
-                                           class="quantity-input mx-2"
-                                           min="1" th:max="${item.product.stockQuantity}"
-                                           onchange="updateQuantityInput(this)">
-                                    <button type="button" class="quantity-btn plus" onclick="updateQuantity(this, 1)">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <h5 class="text-primary"
-                                th:text="${#numbers.formatDecimal(item.product.price * item.quantity, 0, 'COMMA', 2, 'POINT') + ' ₽'}">
-                            </h5>
-                            <small class="text-muted"
-                                   th:text="${#numbers.formatDecimal(item.product.price, 0, 'COMMA', 2, 'POINT') + ' ₽/шт.'}">
-                            </small>
-                        </div>
-                        <div class="col-md-1 text-end">
-                            <form th:action="@{/cart/remove}" method="post">
-                                <input type="hidden" name="productId" th:value="${item.product.id}">
-                                <button type="submit" class="btn btn-link text-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4">
-            <div class="cart-summary">
-                <h4 class="mb-4">Итого</h4>
-
-                <div class="d-flex justify-content-between mb-2">
-                    <span>Товары:</span>
-                    <span th:text="${cartItemCount} + ' шт.'"></span>
-                </div>
-
-                <div class="d-flex justify-content-between mb-3">
-                    <span>Общая сумма:</span>
-                    <span class="fs-4 fw-bold text-primary"
-                          th:text="${#numbers.formatDecimal(cartTotal, 0, 'COMMA', 2, 'POINT') + ' ₽'}">
-                        </span>
-                </div>
-
-                <hr>
-
-                <div class="d-grid gap-2">
-                    <button class="btn btn-checkout"
-                            th:disabled="${cart == null or cart.items.empty}">
-                        <i class="fas fa-credit-card me-2"></i>
-                        Перейти к оформлению
-                    </button>
-
-                    <a href="/catalog" class="btn btn-outline-primary">
-                        <i class="fas fa-arrow-left me-2"></i>
-                        Продолжить покупки
-                    </a>
-
-                    <form th:action="@{/cart/clear}" method="post"
-                          th:if="${cart != null and not cart.items.empty}">
-                        <button type="submit" class="btn btn-outline-danger w-100">
-                            <i class="fas fa-trash-alt me-2"></i>
-                            Очистить корзину
-                        </button>
+    <div th:if="${cart != null and not cart.isEmpty()}">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Товар</th>
+                <th>Количество</th>
+                <th>Цена</th>
+                <th>Сумма</th>
+                <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="entry : ${cart}">
+                <td th:text="${entry.key.name}"></td>
+                <td>
+                    <form th:action="@{/cart/add}" method="post" class="d-inline">
+                        <input type="hidden" name="productId" th:value="${entry.key.id}">
+                        <input type="number" name="quantity" value="1" min="1" style="width: 60px;" class="form-control form-control-sm d-inline">
+                        <button type="submit" class="btn btn-sm btn-primary">Изменить</button>
                     </form>
-                </div>
+                </td>
+                <td th:text="${#numbers.formatDecimal(entry.key.price, 0, 2)}">0</td>
+                <td th:text="${#numbers.formatDecimal(entry.key.price.multiply(T(java.math.BigDecimal).valueOf(entry.value)), 0, 2)}">0</td>
+                <td>
+                    <form th:action="@{/cart/remove}" method="post" class="d-inline">
+                        <input type="hidden" name="productId" th:value="${entry.key.id}">
+                        <button type="submit" class="btn btn-sm btn-danger">Удалить</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
 
-                <div class="mt-4">
-                    <p class="text-muted small">
-                        <i class="fas fa-info-circle me-2"></i>
-                        Все цены указаны с учетом НДС. Доставка рассчитывается при оформлении заказа.
-                    </p>
-                </div>
+        <div class="mt-3">
+            <h4>Общая сумма: <span th:text="${#numbers.formatDecimal(total, 0, 2)}">0</span> руб.</h4>
+            <div class="mt-3">
+                <a th:href="@{/checkout}" class="btn btn-success">Оформить заказ</a>
+                <form th:action="@{/cart/clear}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-warning">Очистить корзину</button>
+                </form>
+                <a th:href="@{/products}" class="btn btn-secondary">Продолжить покупки</a>
             </div>
         </div>
     </div>
+
+    <div th:if="${cart == null or cart.isEmpty()}" class="alert alert-info">
+        <h4>Корзина пуста</h4>
+        <p>Добавьте товары в корзину, чтобы сделать заказ.</p>
+        <a th:href="@{/products}" class="btn btn-primary">Перейти к товарам</a>
+    </div>
 </div>
 
-<!-- Скрипты -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-    function updateQuantity(button, change) {
-        const form = button.closest('form');
-        const input = form.querySelector('.quantity-input');
-        let value = parseInt(input.value) + change;
-
-        const max = parseInt(input.getAttribute('max'));
-        const min = parseInt(input.getAttribute('min'));
-
-        if (value > max) value = max;
-        if (value < min) value = min;
-
-        input.value = value;
-        form.submit();
-    }
-
-    function updateQuantityInput(input) {
-        const form = input.closest('form');
-        form.submit();
-    }
-</script>
 </body>
 </html>

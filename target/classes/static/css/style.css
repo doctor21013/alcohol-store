@@ -24,6 +24,7 @@ body {
     color: var(--dark);
     background: var(--light);
     min-height: 100vh;
+    background-color: #f8f9fa;
 }
 
 /* Hero Section */

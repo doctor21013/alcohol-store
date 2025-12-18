@@ -16,29 +16,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Публичные страницы
-                        .requestMatchers(
-                                "/", "/home", "/catalog", "/product/**", "/search",
-                                "/register", "/login", "/css/**", "/js/**",
-                                "/images/**", "/images.products/**"
-                        ).permitAll()
-
-                        // Админ-страницы - только для админов
-                        .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
-
-                        // Остальные страницы - для авторизованных пользователей
-                        .anyRequest().authenticated()
+                        .requestMatchers("/css/**", "/js/**", "/webjars/**").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/products", "/cart/**").authenticated()
+                        .anyRequest().permitAll()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/", true)
+                        .defaultSuccessUrl("/products", true)
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout=true")
+                        .logoutSuccessUrl("/")
                         .permitAll()
                 );
 
