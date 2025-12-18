@@ -22,9 +22,10 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    // Найти пользователя по email (возвращает User)
+    // Найти пользователя по email (возвращает User) - исправлено для работы с Optional
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        return userRepository.findByEmail(email)
+                .orElse(null); // Возвращаем null, если пользователь не найден
     }
 
     // Получить пользователя по ID (возвращает Optional, так как это стандартный метод JpaRepository)
@@ -61,7 +62,7 @@ public class UserService {
 
     // Проверить существование пользователя по email
     public boolean existsByEmail(String email) {
-        return userRepository.findByEmail(email) != null;
+        return userRepository.findByEmail(email).isPresent(); // Исправлено
     }
 
     // Проверить существование пользователя по username

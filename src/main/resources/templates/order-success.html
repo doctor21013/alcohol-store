@@ -2,71 +2,113 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Заказ успешно оформлен</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заказ оформлен | Alcohol Store</title>
+
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --success-color: #28a745;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .success-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            color: var(--success-color);
+            margin-bottom: 20px;
+        }
+
+        .order-number {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 20px 0;
+        }
+
+        .order-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+    </style>
 </head>
 <body>
-<nav th:replace="~{fragments/navbar :: navbar}"></nav>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card text-center border-success">
-                <div class="card-header bg-success text-white">
-                    <h2><i class="fas fa-check-circle me-2"></i>Заказ успешно оформлен!</h2>
-                </div>
-                <div class="card-body">
-                    <div class="mb-4">
-                        <i class="fas fa-gift fa-5x text-success mb-3"></i>
-                        <h4 class="card-title">Спасибо за ваш заказ!</h4>
-                    </div>
+<div class="success-card">
+    <div class="success-icon">
+        <i class="fas fa-check-circle"></i>
+    </div>
 
-                    <div class="alert alert-info text-start">
-                        <h5>Информация о заказе:</h5>
-                        <p><strong>Номер заказа:</strong> #<span th:text="${orderNumber}"></span></p>
-                        <p><strong>Сумма заказа:</strong> <span th:text="${#numbers.formatDecimal(orderTotal, 0, 2) + ' руб.'}"></span></p>
-                        <p><strong>Статус:</strong> <span class="badge bg-warning">В обработке</span></p>
-                    </div>
+    <h1 class="mb-3">Заказ оформлен успешно!</h1>
 
-                    <div class="mt-4">
-                        <h5>Что дальше?</h5>
-                        <p class="text-muted">
-                            Мы свяжемся с вами в ближайшее время для подтверждения заказа.<br>
-                            Вы можете отслеживать статус заказа в личном кабинете.
-                        </p>
-                    </div>
+    <p class="text-muted mb-4">Благодарим за ваш заказ. Мы свяжемся с вами в ближайшее время для подтверждения.</p>
 
-                    <div class="mt-4">
-                        <a th:href="@{/orders}" class="btn btn-primary me-2">
-                            <i class="fas fa-list me-1"></i>Мои заказы
-                        </a>
-                        <a th:href="@{/catalog}" class="btn btn-outline-primary">
-                            <i class="fas fa-store me-1"></i>Вернуться в магазин
-                        </a>
-                    </div>
-                </div>
-                <div class="card-footer text-muted">
-                    <small>Заказ оформлен <span th:text="${#dates.format(#dates.createNow(), 'dd.MM.yyyy HH:mm')}"></span></small>
-                </div>
+    <div class="order-number" th:if="${orderNumber}">
+        Номер вашего заказа: <span th:text="${orderNumber}"></span>
+    </div>
+
+    <div class="order-info" th:if="${orderTotal}">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Сумма заказа:</strong></p>
+                <h3 th:text="${#numbers.formatDecimal(orderTotal, 0, 2) + ' руб.'}"></h3>
             </div>
-
-            <div class="card mt-3">
-                <div class="card-body">
-                    <h5>Полезная информация:</h5>
-                    <ul class="list-unstyled">
-                        <li><i class="fas fa-phone text-primary me-2"></i>Телефон поддержки: +7 (800) 555-35-35</li>
-                        <li><i class="fas fa-clock text-primary me-2"></i>Время работы: Пн-Вс 10:00-22:00</li>
-                        <li><i class="fas fa-envelope text-primary me-2"></i>Email: support@alcoholstore.ru</li>
-                    </ul>
-                </div>
+            <div class="col-md-6">
+                <p><strong>Статус:</strong></p>
+                <span class="badge bg-warning text-dark fs-6">Обрабатывается</span>
             </div>
         </div>
     </div>
+
+    <div class="mt-4">
+        <p>Информация о заказе была отправлена на вашу электронную почту.</p>
+    </div>
+
+    <div class="mt-5">
+        <a href="/" class="btn btn-primary btn-lg me-3">
+            <i class="fas fa-home me-2"></i>На главную
+        </a>
+        <a href="/orders" class="btn btn-outline-primary btn-lg">
+            <i class="fas fa-list-alt me-2"></i>Мои заказы
+        </a>
+    </div>
+
+    <div class="mt-4 text-muted">
+        <small>
+            <i class="fas fa-clock me-1"></i>
+            Время обработки заказа: 1-2 рабочих дня
+        </small>
+    </div>
 </div>
 
-<footer th:replace="~{fragments/footer :: footer}"></footer>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

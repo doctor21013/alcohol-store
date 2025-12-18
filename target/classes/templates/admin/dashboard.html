@@ -1,346 +1,229 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Админ-панель | Alcohol Store</title>
+    <title>Админ панель | Alcohol Store</title>
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+
     <style>
         :root {
             --primary-color: #2c3e50;
-            --secondary-color: #e74c3c;
         }
 
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, var(--primary-color), #1a252f);
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
         }
 
-        .sidebar .nav-link {
-            color: #ecf0f1;
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin: 5px 10px;
-            transition: all 0.3s;
-        }
-
-        .sidebar .nav-link:hover,
-        .sidebar .nav-link.active {
-            background-color: rgba(255, 255, 255, 0.1);
+        .admin-sidebar {
+            background: var(--primary-color);
             color: white;
+            min-height: 100vh;
+            padding: 0;
         }
 
-        .sidebar .nav-link i {
-            width: 25px;
-            text-align: center;
+        .admin-content {
+            padding: 20px;
         }
 
         .stat-card {
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: none;
-            border-radius: 15px;
-            overflow: hidden;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            border-left: 5px solid;
         }
 
-        .stat-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
-        }
+        .stat-card.users { border-left-color: #3498db; }
+        .stat-card.orders { border-left-color: #2ecc71; }
+        .stat-card.revenue { border-left-color: #e74c3c; }
+        .stat-card.today { border-left-color: #f39c12; }
 
         .stat-icon {
             font-size: 2.5rem;
             opacity: 0.7;
         }
 
-        .recent-orders-table tr:hover {
-            background-color: rgba(0, 0, 0, 0.02);
+        .recent-orders {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
-
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 500;
-        }
-
-        .bg-pending { background-color: #fff3cd; color: #856404; }
-        .bg-processing { background-color: #cce5ff; color: #004085; }
-        .bg-completed { background-color: #d4edda; color: #155724; }
-        .bg-cancelled { background-color: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
+
 <div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <nav class="navbar navbar-expand-lg navbar-light bg-light">
-            <div class="container">
-                <a class="navbar-brand" th:href="@{/}">Alcohol Store</a>
-                <div class="navbar-nav ms-auto">
-                    <a class="nav-link" th:href="@{/products}">Товары</a>
-                    <a class="nav-link" th:href="@{/cart}">Корзина</a>
-                    <a class="nav-link" th:href="@{/admin}" sec:authorize="hasRole('ADMIN')">Админ панель</a>
-                    <a class="nav-link" th:href="@{/profile}">Личный кабинет</a>
-                    <form th:action="@{/logout}" method="post">
-                        <button type="submit" class="btn btn-link nav-link">Выйти</button>
-                    </form>
-                </div>
+        <div class="col-md-2 admin-sidebar">
+            <div class="p-3">
+                <h4 class="mb-4">
+                    <i class="fas fa-wine-bottle me-2"></i>Admin Panel
+                </h4>
+                <hr class="bg-light">
+
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active text-light" href="/admin">
+                            <i class="fas fa-tachometer-alt me-2"></i>Дашборд
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="/admin/orders">
+                            <i class="fas fa-shopping-bag me-2"></i>Заказы
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="/admin/users">
+                            <i class="fas fa-users me-2"></i>Пользователи
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-light" href="/">
+                            <i class="fas fa-home me-2"></i>На сайт
+                        </a>
+                    </li>
+                </ul>
             </div>
-        </nav>
+        </div>
 
         <!-- Main content -->
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
-            <!-- Header -->
-            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-                <h1 class="h2">
-                    <i class="fas fa-tachometer-alt me-2"></i>Панель управления
-                </h1>
-                <div class="btn-toolbar mb-2 mb-md-0">
-                        <span class="text-muted me-3">
-                            <i class="fas fa-calendar-alt me-1"></i>
-                            <span th:text="${#dates.format(#dates.createNow(), 'dd.MM.yyyy HH:mm')}"></span>
-                        </span>
-                </div>
-            </div>
+        <div class="col-md-10 admin-content">
+            <h1 class="mb-4">Панель управления</h1>
 
             <!-- Статистика -->
-            <div class="row">
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card stat-card border-left-primary shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                        Общая выручка
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800"
-                                         th:text="${#numbers.formatDecimal(totalRevenue, 0, 'COMMA', 2, 'POINT') + ' ₽'}">
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-dollar-sign stat-icon text-primary"></i>
-                                </div>
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="stat-card users">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="mb-2">Пользователи</h5>
+                                <h2 th:text="${totalUsers}">0</h2>
+                            </div>
+                            <div>
+                                <i class="fas fa-users stat-icon text-primary"></i>
                             </div>
                         </div>
+                        <p class="text-muted mb-0">
+                            <small>Всего зарегистрировано</small>
+                        </p>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card stat-card border-left-success shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        Всего заказов
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800"
-                                         th:text="${recentOrders != null ? recentOrders.size() : 0}">
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-shopping-cart stat-icon text-success"></i>
-                                </div>
+                <div class="col-md-3">
+                    <div class="stat-card orders">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="mb-2">Заказы</h5>
+                                <h2 th:text="${totalOrders}">0</h2>
+                            </div>
+                            <div>
+                                <i class="fas fa-shopping-bag stat-icon text-success"></i>
                             </div>
                         </div>
+                        <p class="text-muted mb-0">
+                            <small>Всего оформлено</small>
+                        </p>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card stat-card border-left-info shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        Пользователи
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800"
-                                         th:text="${totalUsers}">
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-users stat-icon text-info"></i>
-                                </div>
+                <div class="col-md-3">
+                    <div class="stat-card revenue">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="mb-2">Выручка</h5>
+                                <h2 th:text="${#numbers.formatDecimal(totalRevenue, 0, 2) + ' руб.'}">0 руб.</h2>
+                            </div>
+                            <div>
+                                <i class="fas fa-chart-line stat-icon text-danger"></i>
                             </div>
                         </div>
+                        <p class="text-muted mb-0">
+                            <small>Общая выручка</small>
+                        </p>
                     </div>
                 </div>
 
-                <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card stat-card border-left-warning shadow h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        Товары
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800"
-                                         th:text="${totalProducts}">
-                                    </div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-box stat-icon text-warning"></i>
-                                </div>
+                <div class="col-md-3">
+                    <div class="stat-card today">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h5 class="mb-2">Заказы сегодня</h5>
+                                <h2 th:text="${ordersToday}">0</h2>
+                            </div>
+                            <div>
+                                <i class="fas fa-calendar-day stat-icon text-warning"></i>
                             </div>
                         </div>
+                        <p class="text-muted mb-0">
+                            <small>Сегодняшние заказы</small>
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <!-- Последние заказы -->
-            <div class="row">
-                <div class="col-lg-8">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-primary">
-                                <i class="fas fa-history me-2"></i>Последние заказы
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover recent-orders-table">
-                                    <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Клиент</th>
-                                        <th>Сумма</th>
-                                        <th>Статус</th>
-                                        <th>Дата</th>
-                                        <th>Действия</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <tr th:if="${recentOrders == null or recentOrders.isEmpty()}">
-                                        <td colspan="6" class="text-center text-muted py-4">
-                                            <i class="fas fa-inbox fa-2x mb-3"></i>
-                                            <p class="mb-0">Нет заказов</p>
-                                        </td>
-                                    </tr>
-                                    <tr th:each="order : ${recentOrders}">
-                                        <td th:text="${order.id}"></td>
-                                        <td>
-                                            <div th:if="${order.user != null}">
-                                                <strong th:text="${order.user.username}"></strong>
-                                                <br>
-                                                <small class="text-muted" th:text="${order.user.email}"></small>
-                                            </div>
-                                            <div th:unless="${order.user != null}">
-                                                Гость
-                                            </div>
-                                        </td>
-                                        <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 'COMMA', 2, 'POINT') + ' ₽'}"></td>
-                                        <td>
-                                                    <span class="status-badge"
-                                                          th:classappend="${order.status == 'PENDING'} ? 'bg-pending' :
-                                                                         ${order.status == 'PROCESSING'} ? 'bg-processing' :
-                                                                         ${order.status == 'COMPLETED'} ? 'bg-completed' :
-                                                                         'bg-cancelled'"
-                                                          th:text="${order.status}">
-                                                    </span>
-                                        </td>
-                                        <td th:text="${#dates.format(order.createdAt, 'dd.MM.yyyy HH:mm')}"></td>
-                                        <td>
-                                            <a th:href="@{/admin/orders/{id}(id=${order.id})}"
-                                               class="btn btn-sm btn-outline-primary">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <a th:href="@{/admin/orders}" class="btn btn-primary btn-sm">
-                                <i class="fas fa-list me-1"></i>Все заказы
-                            </a>
-                        </div>
-                    </div>
+            <!-- Недавние заказы -->
+            <div class="recent-orders">
+                <h4 class="mb-4">Недавние заказы</h4>
+
+                <div th:if="${recentOrders == null or recentOrders.empty}" class="text-center py-5">
+                    <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Нет недавних заказов</p>
                 </div>
 
-                <!-- Быстрые действия -->
-                <div class="col-lg-4">
-                    <div class="card shadow mb-4">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-success">
-                                <i class="fas fa-bolt me-2"></i>Быстрые действия
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <a th:href="@{/admin/products/new}" class="btn btn-success">
-                                    <i class="fas fa-plus me-2"></i>Добавить товар
+                <div th:if="${recentOrders != null and not recentOrders.empty}" class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th>№ Заказа</th>
+                            <th>Клиент</th>
+                            <th>Дата</th>
+                            <th>Сумма</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="order : ${recentOrders}">
+                            <td th:text="${order.id}"></td>
+                            <td th:text="${order.customerName}"></td>
+                            <td th:text="${#dates.format(order.orderDate, 'dd.MM.yyyy HH:mm')}"></td>
+                            <td th:text="${#numbers.formatDecimal(order.totalAmount, 0, 2) + ' руб.'}"></td>
+                            <td>
+                                <span th:if="${order.status == 'PENDING'}" class="badge bg-warning">Ожидает</span>
+                                <span th:if="${order.status == 'PROCESSING'}" class="badge bg-info">Обрабатывается</span>
+                                <span th:if="${order.status == 'COMPLETED'}" class="badge bg-success">Завершен</span>
+                                <span th:if="${order.status == 'CANCELLED'}" class="badge bg-danger">Отменен</span>
+                            </td>
+                            <td>
+                                <a th:href="@{/admin/orders/{id}(id=${order.id})}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i>
                                 </a>
-                                <a th:href="@{/catalog}" class="btn btn-outline-primary">
-                                    <i class="fas fa-store me-2"></i>Просмотреть каталог
-                                </a>
-                                <a th:href="@{/admin/users}" class="btn btn-outline-info">
-                                    <i class="fas fa-user-plus me-2"></i>Управление пользователями
-                                </a>
-                                <button class="btn btn-outline-warning" onclick="location.reload()">
-                                    <i class="fas fa-sync-alt me-2"></i>Обновить статистику
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Статистика за сегодня -->
-                    <div class="card shadow">
-                        <div class="card-header py-3">
-                            <h6 class="m-0 font-weight-bold text-info">
-                                <i class="fas fa-chart-bar me-2"></i>Сегодня
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    Заказов сегодня
-                                    <span class="badge bg-primary rounded-pill">0</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    Выручка сегодня
-                                    <span class="text-success">0 ₽</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    Новые пользователи
-                                    <span class="badge bg-success rounded-pill">0</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    Новые товары
-                                    <span class="badge bg-warning rounded-pill">0</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-        </main>
+        </div>
     </div>
 </div>
 
-<!-- Скрипты -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    // Автоматическое обновление каждые 60 секунд
-    setInterval(() => {
-        console.log('Обновление статистики...');
-        // Можно добавить AJAX запрос для обновления статистики
+    // Автоматическое обновление статистики каждые 60 секунд
+    setInterval(function() {
+        // Можно добавить AJAX запрос для обновления статистики без перезагрузки
+        console.log("Обновление статистики...");
     }, 60000);
-
-    // Подсветка активной ссылки в сайдбаре
-    document.addEventListener('DOMContentLoaded', function() {
-        const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('.sidebar .nav-link');
-
-        navLinks.forEach(link => {
-            if (link.getAttribute('href') === currentPath) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
-        });
-    });
 </script>
 </body>
 </html>

@@ -19,7 +19,7 @@ public class SecurityConfig {
                         .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/webjars/**",
                                 "/register", "/register/**", "/login", "/error").permitAll()
                         .requestMatchers("/admin/**").hasAuthority("ROLE_ADMIN")
-                        .requestMatchers("/catalog", "/cart/**", "/profile/**").authenticated()
+                        .requestMatchers("/catalog", "/cart/**", "/profile/**", "/orders/**").authenticated() // Добавлено /orders/**
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

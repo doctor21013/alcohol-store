@@ -96,7 +96,43 @@ public class OrderService {
 
     // Получить недавние заказы (для дашборда)
     public List<Order> getRecentOrders(int count) {
-        return orderRepository.findTop10ByOrderByOrderDateDesc();
+        List<Order> recentOrders = orderRepository.findTop10ByOrderByOrderDateDesc();
+        if (recentOrders.size() > count) {
+            return recentOrders.subList(0, count);
+        }
+        return recentOrders;
+    }
+
+    // Получить заказы по статусу
+    public List<Order> getOrdersByStatus(String status) {
+        return orderRepository.findByStatusOrderByOrderDateDesc(status);
+    }
+
+    // Получить общее количество заказов
+    public long getTotalOrdersCount() {
+        return orderRepository.count();
+    }
+
+    // Получить выручку за все время
+    public BigDecimal getTotalRevenue() {
+        List<Order> allOrders = getAllOrders();
+        BigDecimal total = BigDecimal.ZERO;
+        for (Order order : allOrders) {
+            total = total.add(order.getTotalAmount());
+        }
+        return total;
+    }
+
+    // Получить выручку за сегодня
+    public BigDecimal getTodayRevenue() {
+        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+        List<Order> todayOrders = orderRepository.findByOrderDateAfter(startOfDay);
+
+        BigDecimal total = BigDecimal.ZERO;
+        for (Order order : todayOrders) {
+            total = total.add(order.getTotalAmount());
+        }
+        return total;
     }
 
     // Обновить статус заказа

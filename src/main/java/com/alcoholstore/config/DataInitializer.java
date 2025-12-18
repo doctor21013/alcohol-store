@@ -8,6 +8,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -31,7 +33,9 @@ public class DataInitializer implements CommandLineRunner {
 
     private void createUserIfNotExists(String username, String email, String role, String password) {
         // Проверяем, существует ли пользователь с таким email
-        if (userRepository.findByEmail(email).isEmpty()) {
+        Optional<User> existingUser = userRepository.findByEmail(email);
+
+        if (existingUser.isEmpty()) {
             System.out.println("👤 Создание пользователя: " + username);
 
             User user = new User();

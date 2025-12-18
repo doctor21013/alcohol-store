@@ -2,8 +2,10 @@ package com.alcoholstore.controller;
 
 import com.alcoholstore.model.Cart;
 import com.alcoholstore.model.Order;
+import com.alcoholstore.model.User;
 import com.alcoholstore.service.CartService;
 import com.alcoholstore.service.OrderService;
+import com.alcoholstore.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,6 +27,9 @@ public class OrderController {
     @Autowired
     private CartService cartService;
 
+    @Autowired
+    private UserService userService;
+
     // ========== МОИ ЗАКАЗЫ ==========
     @GetMapping
     public String myOrders(@AuthenticationPrincipal UserDetails userDetails, Model model) {
@@ -34,11 +39,13 @@ public class OrderController {
 
         String username = userDetails.getUsername();
         List<Order> orders = orderService.getOrdersByUsername(username);
+        User user = userService.findByUsername(username);
 
         model.addAttribute("orders", orders);
         model.addAttribute("loggedIn", true);
         model.addAttribute("userName", username);
         model.addAttribute("cartItemsCount", cartService.getCartItemCount(username));
+        model.addAttribute("user", user); // Добавлено
 
         return "orders";
     }
@@ -58,19 +65,24 @@ public class OrderController {
             return "redirect:/cart";
         }
 
+        // Получаем данные пользователя
+        User user = userService.findByUsername(username);
+
         // Заполняем данные пользователя по умолчанию
         model.addAttribute("cart", cart);
         model.addAttribute("cartItems", cart.getItems());
         model.addAttribute("totalPrice", cart.getTotalPrice());
         model.addAttribute("userName", username);
         model.addAttribute("loggedIn", true);
+        model.addAttribute("user", user); // Добавлено
 
         // Предзаполняем данные пользователя
-        model.addAttribute("defaultName", userDetails.getUsername());
+        model.addAttribute("defaultName", user != null ? user.getUsername() : "");
 
-        // TODO: Если у пользователя есть профиль, можно взять email и телефон оттуда
-        // model.addAttribute("defaultEmail", user.getEmail());
-        // model.addAttribute("defaultPhone", user.getPhone());
+        // Если у пользователя есть профиль, берем email оттуда
+        if (user != null && user.getEmail() != null) {
+            model.addAttribute("defaultEmail", user.getEmail());
+        }
 
         return "checkout";
     }

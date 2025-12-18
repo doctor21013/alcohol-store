@@ -11,6 +11,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Optional;
+
 @Controller
 @RequestMapping("/profile")
 public class ProfileController {
@@ -79,8 +81,8 @@ public class ProfileController {
             }
 
             // Проверяем, не занят ли email другим пользователем
-            User existingUserWithEmail = userRepository.findByEmail(email);
-            if (existingUserWithEmail != null && !existingUserWithEmail.getId().equals(user.getId())) {
+            Optional<User> existingUserWithEmail = userRepository.findByEmail(email);
+            if (existingUserWithEmail.isPresent() && !existingUserWithEmail.get().getId().equals(user.getId())) {
                 redirectAttributes.addFlashAttribute("error", "Этот email уже используется другим пользователем");
                 return "redirect:/profile/edit";
             }
