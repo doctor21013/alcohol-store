@@ -8,10 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
@@ -40,32 +37,29 @@ public class ProductController {
 
         Product product = productOpt.get();
 
-        // Проверяем авторизацию для добавления в избранное
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId != null) {
-            // Здесь можно проверить, есть ли товар в избранном у пользователя
-            // Пока просто устанавливаем false
+        // Проверяем авторизацию
+        Object userObj = session.getAttribute("user");
+        if (userObj != null) {
             product.setFavorite(false);
         }
 
         model.addAttribute("product", product);
-        model.addAttribute("loggedIn", userId != null);
+        model.addAttribute("loggedIn", userObj != null);
 
-        if (userId != null) {
-            model.addAttribute("userName", session.getAttribute("userName"));
+        if (userObj != null) {
+            model.addAttribute("userName", session.getAttribute("username"));
         }
 
-        // Получаем отзывы и рейтинг для товара (если есть сервис отзывов)
+        // Получаем отзывы и рейтинг для товара
         try {
             Double averageRating = reviewService.getProductAverageRating(id);
             Long reviewCount = reviewService.getProductReviewCount(id);
-            var reviews = reviewService.getProductReviews(id, false);
+            var reviews = reviewService.getProductReviews(id);
 
             model.addAttribute("averageRating", averageRating);
             model.addAttribute("reviewCount", reviewCount);
             model.addAttribute("reviews", reviews);
         } catch (Exception e) {
-            // Если сервис отзывов еще не реализован
             model.addAttribute("averageRating", 0.0);
             model.addAttribute("reviewCount", 0);
             model.addAttribute("reviews", List.of());
@@ -87,43 +81,20 @@ public class ProductController {
         model.addAttribute("searchQuery", query);
         model.addAttribute("searchResultsCount", searchResults.size());
 
-        // Проверяем авторизацию
-        Long userId = (Long) session.getAttribute("userId");
-        model.addAttribute("loggedIn", userId != null);
+        Object userObj = session.getAttribute("user");
+        model.addAttribute("loggedIn", userObj != null);
 
-        if (userId != null) {
-            model.addAttribute("userName", session.getAttribute("userName"));
+        if (userObj != null) {
+            model.addAttribute("userName", session.getAttribute("username"));
         }
 
-        // Количество товаров в корзине
         String sessionId = cartService.getOrCreateSessionId(session);
         model.addAttribute("cartItemsCount", cartService.getCartItemsCount(sessionId));
 
         return "catalog";
     }
 
-    // ========== ФИЛЬТРАЦИЯ ПО КАТЕГОРИИ ==========
-    @GetMapping("/category/{categoryId}")
-    public String filterByCategory(@PathVariable Long categoryId, Model model, HttpSession session) {
-        List<Product> categoryProducts = catalogService.getProductsByCategory(categoryId);
-
-        model.addAttribute("products", categoryProducts);
-        model.addAttribute("categoryProductsCount", categoryProducts.size());
-
-        // Проверяем авторизацию
-        Long userId = (Long) session.getAttribute("userId");
-        model.addAttribute("loggedIn", userId != null);
-
-        if (userId != null) {
-            model.addAttribute("userName", session.getAttribute("userName"));
-        }
-
-        // Количество товаров в корзине
-        String sessionId = cartService.getOrCreateSessionId(session);
-        model.addAttribute("cartItemsCount", cartService.getCartItemsCount(sessionId));
-
-        return "catalog";
-    }
+    // УДАЛЕНО: ФИЛЬТРАЦИЯ ПО КАТЕГОРИИ (удали весь метод filterByCategory)
 
     // ========== ДОБАВЛЕНИЕ В КОРЗИНУ (через POST) ==========
     @PostMapping("/cart/add")
@@ -161,18 +132,5 @@ public class ProductController {
         }
 
         return "redirect:/catalog";
-    }
-
-    // ========== ПРОСМОТР ИСТОРИИ ПРОСМОТРОВ ==========
-    @GetMapping("/history")
-    public String viewHistory(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
-            return "redirect:/login";
-        }
-
-        // Здесь можно получить историю просмотров из сессии или базы данных
-        // Пока просто редирект на главную
-        return "redirect:/";
     }
 }

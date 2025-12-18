@@ -18,19 +18,15 @@ public class AuthController {
         this.userRepository = userRepository;
     }
 
-    @GetMapping("/")
-    public String home(HttpSession session) {
-        if (session.getAttribute("user") != null) {
-            return "redirect:/dashboard";
-        }
-        return "home";
-    }
+    // Главная страница обрабатывается HomeController
+    // УДАЛЕНО: метод home() с @GetMapping("/")
 
     @GetMapping("/home")
     public String homePage() {
         return "home";
     }
 
+    // Остальные методы остаются без изменений
     @GetMapping("/login")
     public String loginPage() {
         return "login";
@@ -48,7 +44,7 @@ public class AuthController {
             User user = userOpt.get();
             session.setAttribute("user", user);
             session.setAttribute("username", user.getUsername());
-            session.setAttribute("isAdmin", user.isAdmin());
+            session.setAttribute("isAdmin", user.getIsAdmin() != null ? user.getIsAdmin() : false);
             return "redirect:/dashboard";
         } else {
             redirectAttributes.addFlashAttribute("error", "Неверное имя пользователя или пароль");
@@ -83,12 +79,15 @@ public class AuthController {
             return "redirect:/register";
         }
 
-        user.setAdmin(false);
+        user.setIsAdmin(false);
+        user.setFullName("");
+        user.setPhone("");
+
         User savedUser = userRepository.save(user);
 
         session.setAttribute("user", savedUser);
         session.setAttribute("username", savedUser.getUsername());
-        session.setAttribute("isAdmin", savedUser.isAdmin());
+        session.setAttribute("isAdmin", savedUser.getIsAdmin() != null ? savedUser.getIsAdmin() : false);
 
         return "redirect:/dashboard";
     }
@@ -99,8 +98,11 @@ public class AuthController {
             return "redirect:/login";
         }
 
-        model.addAttribute("username", session.getAttribute("username"));
-        model.addAttribute("isAdmin", session.getAttribute("isAdmin"));
+        // Получаем пользователя из сессии
+        User user = (User) session.getAttribute("user");
+
+        model.addAttribute("username", user.getUsername());
+        model.addAttribute("isAdmin", user.getIsAdmin() != null ? user.getIsAdmin() : false);
         return "dashboard";
     }
 
@@ -112,24 +114,28 @@ public class AuthController {
 
     @PostConstruct
     public void initTestUsers() {
+        // Тестовый администратор
         if (!userRepository.existsByUsername("admin")) {
             User admin = new User();
             admin.setUsername("admin");
             admin.setEmail("admin@example.com");
             admin.setPassword("admin123");
-            admin.setAdmin(true);
+            admin.setIsAdmin(true);
+            admin.setFullName("Администратор");
             userRepository.save(admin);
-            System.out.println("Создан тестовый администратор: admin / admin123");
+            System.out.println("✅ Создан тестовый администратор: admin / admin123");
         }
 
+        // Тестовый пользователь
         if (!userRepository.existsByUsername("user")) {
             User user = new User();
             user.setUsername("user");
             user.setEmail("user@example.com");
             user.setPassword("user123");
-            user.setAdmin(false);
+            user.setIsAdmin(false);
+            user.setFullName("Пользователь");
             userRepository.save(user);
-            System.out.println("Создан тестовый пользователь: user / user123");
+            System.out.println("✅ Создан тестовый пользователь: user / user123");
         }
     }
 }

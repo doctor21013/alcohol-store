@@ -21,7 +21,13 @@ public class User {
     private String password;
 
     @Column(name = "is_admin")
-    private boolean isAdmin = false;
+    private Boolean isAdmin = false;
+
+    @Column(name = "full_name")
+    private String fullName;
+
+    @Column(name = "phone")
+    private String phone;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -29,12 +35,21 @@ public class User {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        if (isAdmin == null) {
+            isAdmin = false;
+        }
+        if (fullName == null) {
+            fullName = "";
+        }
+        if (phone == null) {
+            phone = "";
+        }
     }
 
     // Конструкторы
     public User() {}
 
-    public User(String username, String email, String password, boolean isAdmin) {
+    public User(String username, String email, String password, Boolean isAdmin) {
         this.username = username;
         this.email = email;
         this.password = password;
@@ -54,9 +69,26 @@ public class User {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public boolean isAdmin() { return isAdmin; }
-    public void setAdmin(boolean admin) { isAdmin = admin; }
+    public Boolean getIsAdmin() { return isAdmin; }
+    public void setIsAdmin(Boolean isAdmin) {
+        this.isAdmin = isAdmin != null ? isAdmin : false;
+    }
+
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) {
+        this.fullName = fullName != null ? fullName : "";
+    }
+
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) {
+        this.phone = phone != null ? phone : "";
+    }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    // Удобный метод
+    public boolean isAdmin() {
+        return isAdmin != null && isAdmin;
+    }
 }

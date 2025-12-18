@@ -19,12 +19,14 @@ public class ProfileController {
     // Просмотр профиля
     @GetMapping
     public String viewProfile(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
+        // Получаем пользователя из сессии
+        User sessionUser = (User) session.getAttribute("user");
+        if (sessionUser == null) {
             return "redirect:/login";
         }
 
-        User user = userService.getUserById(userId)
+        // Получаем свежие данные из базы
+        User user = userService.getUserById(sessionUser.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
         model.addAttribute("user", user);
@@ -34,12 +36,12 @@ public class ProfileController {
     // Форма редактирования профиля
     @GetMapping("/edit")
     public String editProfileForm(HttpSession session, Model model) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
+        User sessionUser = (User) session.getAttribute("user");
+        if (sessionUser == null) {
             return "redirect:/login";
         }
 
-        User user = userService.getUserById(userId)
+        User user = userService.getUserById(sessionUser.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
         model.addAttribute("user", user);
@@ -50,36 +52,47 @@ public class ProfileController {
     @PostMapping("/update")
     public String updateProfile(@RequestParam String fullName,
                                 @RequestParam String email,
-                                @RequestParam String phone,
+                                @RequestParam(required = false) String phone,
                                 HttpSession session,
                                 RedirectAttributes redirectAttributes) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
+        User sessionUser = (User) session.getAttribute("user");
+        if (sessionUser == null) {
             return "redirect:/login";
         }
 
-        User user = userService.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        try {
+            User user = userService.getUserById(sessionUser.getId())
+                    .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
-        user.setFullName(fullName);
-        user.setEmail(email);
-        user.setPhone(phone);
+            // Создаем обновленного пользователя
+            User updatedUser = new User();
+            updatedUser.setUsername(user.getUsername()); // username не меняем
+            updatedUser.setEmail(email);
+            updatedUser.setFullName(fullName);
+            updatedUser.setPhone(phone);
+            updatedUser.setPassword(user.getPassword()); // пароль не меняем
 
-        userService.updateUser(userId, user);
+            // Сохраняем изменения
+            userService.updateUser(user.getId(), updatedUser);
 
-        // Обновляем данные в сессии
-        session.setAttribute("userName", user.getFullName());
-        session.setAttribute("userEmail", user.getEmail());
+            // Обновляем данные в сессии
+            User freshUser = userService.getUserById(user.getId())
+                    .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+            session.setAttribute("user", freshUser);
+            session.setAttribute("username", freshUser.getUsername());
 
-        redirectAttributes.addFlashAttribute("success", "Профиль успешно обновлен!");
+            redirectAttributes.addFlashAttribute("success", "Профиль успешно обновлен!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Ошибка: " + e.getMessage());
+        }
+
         return "redirect:/profile";
     }
 
     // Форма смены пароля
     @GetMapping("/change-password")
-    public String changePasswordForm(HttpSession session) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
+    public String changePasswordForm(HttpSession session, Model model) {
+        if (session.getAttribute("user") == null) {
             return "redirect:/login";
         }
         return "change-password";
@@ -93,31 +106,42 @@ public class ProfileController {
                                  HttpSession session,
                                  Model model,
                                  RedirectAttributes redirectAttributes) {
-        Long userId = (Long) session.getAttribute("userId");
-        if (userId == null) {
+        User sessionUser = (User) session.getAttribute("user");
+        if (sessionUser == null) {
             return "redirect:/login";
         }
 
-        User user = userService.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+        try {
+            User user = userService.getUserById(sessionUser.getId())
+                    .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
 
-        // Проверяем текущий пароль
-        if (!user.getPassword().equals(currentPassword)) {
-            model.addAttribute("error", "Текущий пароль неверен");
+            // Проверяем текущий пароль
+            if (!user.getPassword().equals(currentPassword)) {
+                model.addAttribute("error", "Текущий пароль неверен");
+                return "change-password";
+            }
+
+            // Проверяем, что новый пароль и подтверждение совпадают
+            if (!newPassword.equals(confirmPassword)) {
+                model.addAttribute("error", "Новый пароль и подтверждение не совпадают");
+                return "change-password";
+            }
+
+            // Обновляем пароль
+            User updatedUser = new User();
+            updatedUser.setUsername(user.getUsername());
+            updatedUser.setEmail(user.getEmail());
+            updatedUser.setPassword(newPassword);
+            updatedUser.setFullName(user.getFullName());
+            updatedUser.setPhone(user.getPhone());
+
+            userService.updateUser(user.getId(), updatedUser);
+
+            redirectAttributes.addFlashAttribute("success", "Пароль успешно изменен!");
+            return "redirect:/profile";
+        } catch (Exception e) {
+            model.addAttribute("error", "Ошибка: " + e.getMessage());
             return "change-password";
         }
-
-        // Проверяем, что новый пароль и подтверждение совпадают
-        if (!newPassword.equals(confirmPassword)) {
-            model.addAttribute("error", "Новый пароль и подтверждение не совпадают");
-            return "change-password";
-        }
-
-        // Обновляем пароль
-        user.setPassword(newPassword);
-        userService.updateUser(userId, user);
-
-        redirectAttributes.addFlashAttribute("success", "Пароль успешно изменен!");
-        return "redirect:/profile";
     }
 }

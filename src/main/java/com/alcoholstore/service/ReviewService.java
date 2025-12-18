@@ -6,151 +6,85 @@ import com.alcoholstore.model.User;
 import com.alcoholstore.repository.ReviewRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class ReviewService {
 
     @Autowired
     private ReviewRepository reviewRepository;
 
     @Autowired
-    private com.alcoholstore.service.UserService userService;
+    private UserService userService;
 
     @Autowired
     private ProductService productService;
 
-    // Добавить отзыв
-    public Review addReview(Long userId, Long productId, Integer rating, String comment) {
-        Optional<User> userOpt = userService.getUserById(userId);
-        if (userOpt.isEmpty()) {
-            throw new RuntimeException("Пользователь не найден");
-        }
-        User user = userOpt.get();
+    public List<Review> getUnapprovedReviews() {
+        return reviewRepository.findByApprovedFalse();
+    }
 
-        Optional<Product> productOpt = productService.getProductById(productId);
-        if (productOpt.isEmpty()) {
-            throw new RuntimeException("Товар не найден");
-        }
-        Product product = productOpt.get();
+    public void approveReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Отзыв не найден"));
+        review.setApproved(true);
+        reviewRepository.save(review);
+    }
 
-        // Проверяем, не оставлял ли уже пользователь отзыв
-        Optional<Review> existingReview = reviewRepository.findByProductAndUser(product, user);
-        if (existingReview.isPresent()) {
-            throw new RuntimeException("Вы уже оставляли отзыв на этот товар");
-        }
+    public void rejectReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Отзыв не найден"));
+        reviewRepository.delete(review);
+    }
+
+    public Review addReview(Long productId, Long userId, Integer rating, String text) {
+        User user = userService.getUserByIdOrThrow(userId);
+        Product product = productService.getProductByIdOrThrow(productId);
 
         Review review = new Review();
-        review.setProduct(product);
         review.setUser(user);
+        review.setProduct(product);
         review.setRating(rating);
-        review.setComment(comment);
-        review.setCreatedAt(LocalDateTime.now());
-
-        // Для администраторов отзыв сразу одобрен
-        if ("ADMIN".equals(user.getRole())) {
-            review.setIsApproved(true);
-        }
+        review.setText(text);
+        review.setApproved(false);
 
         return reviewRepository.save(review);
     }
 
-    // Обновить отзыв
-    public Review updateReview(Long reviewId, Integer rating, String comment) {
-        Optional<Review> reviewOpt = reviewRepository.findById(reviewId);
-        if (reviewOpt.isEmpty()) {
-            throw new RuntimeException("Отзыв не найден");
-        }
-
-        Review review = reviewOpt.get();
-        review.setRating(rating);
-        review.setComment(comment);
-        review.setUpdatedAt(LocalDateTime.now());
-
-        return reviewRepository.save(review);
+    public List<Review> getReviewsByUser(Long userId) {
+        return reviewRepository.findByUserId(userId);
     }
 
-    // Удалить отзыв - ЭТОТ МЕТОД ДОЛЖЕН БЫТЬ
-    public void deleteReview(Long reviewId) {
-        if (!reviewRepository.existsById(reviewId)) {
-            throw new RuntimeException("Отзыв не найден");
-        }
-        reviewRepository.deleteById(reviewId);
+    public List<Review> getReviewsByProduct(Long productId) {
+        return reviewRepository.findByProductId(productId);
     }
 
-    // Получить все отзывы для товара (включая неодобренные для админа)
-    public List<Review> getProductReviews(Long productId, boolean adminView) {
-        Optional<Product> productOpt = productService.getProductById(productId);
-        if (productOpt.isEmpty()) {
-            throw new RuntimeException("Товар не найден");
-        }
-        Product product = productOpt.get();
-
-        if (adminView) {
-            return reviewRepository.findByProduct(product);
-        } else {
-            return reviewRepository.findByProductAndIsApprovedTrue(product);
-        }
+    public List<Review> getAllReviews() {
+        return reviewRepository.findAll();
     }
 
-    // Получить средний рейтинг товара
+    // Метод для получения среднего рейтинга товара
     public Double getProductAverageRating(Long productId) {
-        Optional<Product> productOpt = productService.getProductById(productId);
-        if (productOpt.isEmpty()) {
+        List<Review> reviews = reviewRepository.findByProductIdAndApprovedTrue(productId);
+        if (reviews.isEmpty()) {
             return 0.0;
         }
-        Product product = productOpt.get();
 
-        Double average = reviewRepository.findAverageRatingByProduct(product);
-        return average != null ? Math.round(average * 10.0) / 10.0 : 0.0;
+        double sum = 0;
+        for (Review review : reviews) {
+            sum += review.getRating();
+        }
+        return sum / reviews.size();
     }
 
-    // Получить количество отзывов
+    // Метод для получения количества отзывов товара
     public Long getProductReviewCount(Long productId) {
-        Optional<Product> productOpt = productService.getProductById(productId);
-        if (productOpt.isEmpty()) {
-            return 0L;
-        }
-        Product product = productOpt.get();
-
-        return reviewRepository.countApprovedReviewsByProduct(product);
+        return reviewRepository.countByProductIdAndApprovedTrue(productId);
     }
 
-    // Одобрить отзыв (для админа)
-    public Review approveReview(Long reviewId) {
-        Optional<Review> reviewOpt = reviewRepository.findById(reviewId);
-        if (reviewOpt.isEmpty()) {
-            throw new RuntimeException("Отзыв не найден");
-        }
-
-        Review review = reviewOpt.get();
-        review.setIsApproved(true);
-        return reviewRepository.save(review);
-    }
-
-    // Отклонить отзыв (для админа)
-    public void rejectReview(Long reviewId) {
-        deleteReview(reviewId);
-    }
-
-    // Получить все неодобренные отзывы (для админа)
-    public List<Review> getUnapprovedReviews() {
-        return reviewRepository.findByIsApprovedFalse();
-    }
-
-    // Получить отзывы пользователя
-    public List<Review> getUserReviews(Long userId) {
-        Optional<User> userOpt = userService.getUserById(userId);
-        if (userOpt.isEmpty()) {
-            return List.of();
-        }
-        User user = userOpt.get();
-
-        return reviewRepository.findByUser(user);
+    // Метод для получения отзывов товара (только одобренные)
+    public List<Review> getProductReviews(Long productId) {
+        return reviewRepository.findByProductIdAndApprovedTrue(productId);
     }
 }

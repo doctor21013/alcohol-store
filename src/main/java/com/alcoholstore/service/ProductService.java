@@ -4,13 +4,10 @@ import com.alcoholstore.model.Product;
 import com.alcoholstore.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
 import java.util.Optional;
 
 @Service
-@Transactional
 public class ProductService {
 
     @Autowired
@@ -24,6 +21,12 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
+    // Исправленный метод (без дубликата)
+    public Product getProductByIdOrThrow(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Продукт не найден"));
+    }
+
     public Product saveProduct(Product product) {
         return productRepository.save(product);
     }
@@ -32,11 +35,7 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    public List<Product> searchProducts(String query) {
-        return productRepository.findByNameContainingIgnoreCase(query);
-    }
-
-    public List<Product> getProductsByCategory(Long categoryId) {
-        return productRepository.findByCategoryId(categoryId);
+    public List<Product> searchProducts(String keyword) {
+        return productRepository.findByNameContainingIgnoreCase(keyword);
     }
 }

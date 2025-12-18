@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
 <body>
 <div th:fragment="navbar">
-    <nav style="background: #2c3e50; padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center;">
+    <nav style="background: #2c3e50; padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center;">
         <div>
             <a href="/" style="color: white; text-decoration: none; font-size: 24px; font-weight: bold;">
-                <i class="fas fa-wine-bottle"></i> Alcohol Store
+                Alcohol Store
             </a>
             <a href="/catalog" style="color: white; text-decoration: none; margin-left: 20px;">Каталог</a>
+            <a href="/about" style="color: white; text-decoration: none; margin-left: 20px;">О нас</a>
         </div>
 
-        <div>
-            <a href="/cart" style="color: white; text-decoration: none; margin-right: 20px; position: relative;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="/cart" style="color: white; text-decoration: none; position: relative;">
                 <i class="fas fa-shopping-cart"></i>
                 <span th:if="${cartItemsCount > 0}"
                       style="position: absolute; top: -10px; right: -10px; background: #e74c3c; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 12px;"
@@ -23,16 +20,16 @@
                     </span>
             </a>
 
-            <span th:if="${loggedIn}">
-                    <span th:text="${userName}" style="margin-right: 10px;"></span>
-                    <a href="/profile" style="color: white; text-decoration: none; margin-right: 10px;">Профиль</a>
-                    <a href="/logout" style="color: white; text-decoration: none;">Выход</a>
-                </span>
+            <div th:if="${loggedIn}">
+                <span th:text="${userName}" style="margin-right: 10px;"></span>
+                <a href="/profile" style="color: white; text-decoration: none; margin-right: 10px;">Профиль</a>
+                <a href="/logout" style="color: white; text-decoration: none;">Выход</a>
+            </div>
 
-            <span th:unless="${loggedIn}">
-                    <a href="/login" style="color: white; text-decoration: none; margin-right: 10px;">Вход</a>
-                    <a href="/register" style="color: white; text-decoration: none;">Регистрация</a>
-                </span>
+            <div th:unless="${loggedIn}">
+                <a href="/login" style="color: white; text-decoration: none; margin-right: 10px;">Вход</a>
+                <a href="/register" style="color: white; text-decoration: none;">Регистрация</a>
+            </div>
         </div>
     </nav>
 </div>

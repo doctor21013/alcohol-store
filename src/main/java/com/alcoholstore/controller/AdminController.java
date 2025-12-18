@@ -8,8 +8,8 @@ import com.alcoholstore.service.OrderService;
 import com.alcoholstore.service.ProductService;
 import com.alcoholstore.service.ReviewService;
 import com.alcoholstore.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -20,7 +20,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/admin")
-@PreAuthorize("hasRole('ADMIN')")
 public class AdminController {
 
     @Autowired
@@ -35,9 +34,21 @@ public class AdminController {
     @Autowired
     private ReviewService reviewService;
 
+    // Проверка на администратора
+    private boolean checkAdmin(HttpSession session) {
+        Boolean isAdmin = (Boolean) session.getAttribute("isAdmin");
+        return isAdmin != null && isAdmin;
+    }
+
     // Главная панель администратора
     @GetMapping("/dashboard")
-    public String dashboard(Model model) {
+    public String dashboard(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        User user = (User) session.getAttribute("user");
+        if (user == null || !user.isAdmin()) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         try {
             // Статистика для дашборда
             long totalUsers = userService.getTotalUsersCount();
@@ -74,7 +85,12 @@ public class AdminController {
 
     // Управление товарами
     @GetMapping("/products")
-    public String products(Model model) {
+    public String products(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         try {
             List<Product> products = productService.getAllProducts();
             model.addAttribute("products", products != null ? products : List.of());
@@ -86,7 +102,12 @@ public class AdminController {
 
     // Форма добавления нового товара
     @GetMapping("/products/new")
-    public String showAddProductForm(Model model) {
+    public String showAddProductForm(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         model.addAttribute("product", new Product());
         model.addAttribute("isEdit", false);
         return "admin/product-form";
@@ -94,7 +115,13 @@ public class AdminController {
 
     // Форма редактирования товара
     @GetMapping("/products/edit/{id}")
-    public String showEditProductForm(@PathVariable Long id, Model model) {
+    public String showEditProductForm(@PathVariable Long id, Model model,
+                                      HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         try {
             Product product = productService.getProductById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Товар не найден: " + id));
@@ -116,7 +143,13 @@ public class AdminController {
                                 @RequestParam(required = false) Integer volumeMl,
                                 @RequestParam(required = false) Integer inStock,
                                 @RequestParam(required = false) String imageUrl,
+                                HttpSession session,
                                 RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         try {
             Product product = productService.getProductById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Товар не найден"));
@@ -142,7 +175,14 @@ public class AdminController {
 
     // Сохранение товара (создание или обновление)
     @PostMapping("/products/save")
-    public String saveProduct(@ModelAttribute Product product, RedirectAttributes redirectAttributes) {
+    public String saveProduct(@ModelAttribute Product product,
+                              HttpSession session,
+                              RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         productService.saveProduct(product);
         redirectAttributes.addFlashAttribute("successMessage",
                 product.getId() == null ? "Товар успешно добавлен!" : "Товар успешно обновлен!");
@@ -151,7 +191,14 @@ public class AdminController {
 
     // Удаление товара
     @PostMapping("/products/delete/{id}")
-    public String deleteProduct(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String deleteProduct(@PathVariable Long id,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         try {
             productService.deleteProduct(id);
             redirectAttributes.addFlashAttribute("successMessage", "Товар успешно удален!");
@@ -164,32 +211,49 @@ public class AdminController {
 
     // Управление пользователями
     @GetMapping("/users")
-    public String users(Model model) {
+    public String users(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         List<User> users = userService.getAllUsers();
         model.addAttribute("users", users);
         return "admin/users";
     }
 
-    // Блокировка/разблокировка пользователя
-    @PostMapping("/users/toggle-status/{id}")
-    public String toggleUserStatus(@PathVariable Long id, RedirectAttributes redirectAttributes) {
-        userService.toggleUserStatus(id);
-        redirectAttributes.addFlashAttribute("successMessage", "Статус пользователя изменен!");
-        return "redirect:/admin/users";
-    }
+    // Блокировка/разблокировка пользователя (вместо toggleUserStatus)
+    @PostMapping("/users/toggle-admin/{id}")
+    public String toggleAdminStatus(@PathVariable Long id,
+                                    HttpSession session,
+                                    RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
 
-    // Изменение роли пользователя
-    @PostMapping("/users/change-role/{id}")
-    public String changeUserRole(@PathVariable Long id, @RequestParam String role,
-                                 RedirectAttributes redirectAttributes) {
-        userService.changeUserRole(id, role);
-        redirectAttributes.addFlashAttribute("successMessage", "Роль пользователя изменена!");
+        try {
+            User user = userService.getUserByIdOrThrow(id);
+            user.setIsAdmin(!user.getIsAdmin()); // Используем setIsAdmin
+            userService.saveUser(user);
+
+            redirectAttributes.addFlashAttribute("successMessage",
+                    user.getIsAdmin() ? "Пользователь стал администратором!" : "Пользователь лишен прав администратора!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка: " + e.getMessage());
+        }
+
         return "redirect:/admin/users";
     }
 
     // Управление заказами
     @GetMapping("/orders")
-    public String orders(Model model) {
+    public String orders(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         List<Order> orders = orderService.getAllOrders();
         model.addAttribute("orders", orders);
         return "admin/orders";
@@ -197,32 +261,73 @@ public class AdminController {
 
     // Изменение статуса заказа
     @PostMapping("/orders/update-status/{id}")
-    public String updateOrderStatus(@PathVariable Long id, @RequestParam String status,
+    public String updateOrderStatus(@PathVariable Long id,
+                                    @RequestParam String status,
+                                    HttpSession session,
                                     RedirectAttributes redirectAttributes) {
-        orderService.updateOrderStatus(id, status);
-        redirectAttributes.addFlashAttribute("successMessage", "Статус заказа обновлен!");
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
+        try {
+            orderService.updateOrderStatus(id, status);
+            redirectAttributes.addFlashAttribute("successMessage", "Статус заказа обновлен!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка: " + e.getMessage());
+        }
+
         return "redirect:/admin/orders";
     }
 
     // Просмотр деталей заказа
     @GetMapping("/orders/{id}")
-    public String viewOrder(@PathVariable Long id, Model model) {
-        Order order = orderService.getOrderById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Заказ не найден: " + id));
-        model.addAttribute("order", order);
-        return "admin/order-details";
+    public String viewOrder(@PathVariable Long id,
+                            Model model,
+                            HttpSession session,
+                            RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
+        try {
+            Order order = orderService.getOrderById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Заказ не найден: " + id));
+            model.addAttribute("order", order);
+            return "admin/order-details";
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Заказ не найден: " + e.getMessage());
+            return "redirect:/admin/orders";
+        }
     }
 
-    // ========== УПРАВЛЕНИЕ ОТЗЫВАМИ ==========
+    // Управление отзывами
     @GetMapping("/reviews")
-    public String reviews(Model model) {
-        List<Review> unapprovedReviews = reviewService.getUnapprovedReviews();
-        model.addAttribute("unapprovedReviews", unapprovedReviews);
+    public String reviews(Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
+        try {
+            List<Review> unapprovedReviews = reviewService.getUnapprovedReviews();
+            model.addAttribute("unapprovedReviews", unapprovedReviews);
+        } catch (Exception e) {
+            model.addAttribute("unapprovedReviews", List.of());
+        }
         return "admin/reviews";
     }
 
     @PostMapping("/reviews/approve/{id}")
-    public String approveReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String approveReview(@PathVariable Long id,
+                                HttpSession session,
+                                RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         try {
             reviewService.approveReview(id);
             redirectAttributes.addFlashAttribute("successMessage", "Отзыв одобрен");
@@ -233,7 +338,14 @@ public class AdminController {
     }
 
     @PostMapping("/reviews/reject/{id}")
-    public String rejectReview(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+    public String rejectReview(@PathVariable Long id,
+                               HttpSession session,
+                               RedirectAttributes redirectAttributes) {
+        if (!checkAdmin(session)) {
+            redirectAttributes.addFlashAttribute("error", "Доступ запрещен. Требуются права администратора.");
+            return "redirect:/dashboard";
+        }
+
         try {
             reviewService.rejectReview(id);
             redirectAttributes.addFlashAttribute("successMessage", "Отзыв отклонен");
