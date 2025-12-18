@@ -14,22 +14,54 @@ public class Product {
     @Column(nullable = false)
     private String name;
 
-    @Column(length = 2000)
+    @Column(length = 1000)
     private String description;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    private Double alcoholContent;
-    private String countryOfOrigin;
+    @Column(name = "category", nullable = false)
+    private String category;
+
+    @Column(name = "alcohol_percentage")
+    private Double alcoholPercentage;
+
+    @Column(name = "volume_ml")
     private Integer volumeMl;
-    private Integer inStock;
-    private String imageUrl;
 
-    @Transient // Это поле не будет сохраняться в БД
-    private Boolean favorite;
+    @Column(name = "country")
+    private String country;
 
-    // Геттеры и сеттеры
+    @Column(name = "image_filename")
+    private String imageFilename;
+
+    @Column(name = "stock_quantity")
+    private Integer stockQuantity = 10;
+
+    @Column(name = "is_available")
+    private Boolean isAvailable = true;
+
+    @Transient  // ⬅️ НОВОЕ ПОЛЕ - не сохраняется в БД
+    private Boolean favorite = false;
+
+    // Конструкторы
+    public Product() {}
+
+    public Product(String name, String description, BigDecimal price,
+                   String category, String imageFilename,
+                   Double alcoholPercentage, Integer volumeMl,
+                   String country) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.category = category;
+        this.imageFilename = imageFilename;
+        this.alcoholPercentage = alcoholPercentage;
+        this.volumeMl = volumeMl;
+        this.country = country;
+    }
+
+    // Геттеры и сеттеры для всех полей
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -42,21 +74,33 @@ public class Product {
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
 
-    public Double getAlcoholContent() { return alcoholContent; }
-    public void setAlcoholContent(Double alcoholContent) { this.alcoholContent = alcoholContent; }
+    public String getCategory() { return category; }
+    public void setCategory(String category) { this.category = category; }
 
-    public String getCountryOfOrigin() { return countryOfOrigin; }
-    public void setCountryOfOrigin(String countryOfOrigin) { this.countryOfOrigin = countryOfOrigin; }
+    public Double getAlcoholPercentage() { return alcoholPercentage; }
+    public void setAlcoholPercentage(Double alcoholPercentage) { this.alcoholPercentage = alcoholPercentage; }
 
     public Integer getVolumeMl() { return volumeMl; }
     public void setVolumeMl(Integer volumeMl) { this.volumeMl = volumeMl; }
 
-    public Integer getInStock() { return inStock; }
-    public void setInStock(Integer inStock) { this.inStock = inStock; }
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
 
-    public String getImageUrl() { return imageUrl; }
-    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public String getImageFilename() { return imageFilename; }
+    public void setImageFilename(String imageFilename) { this.imageFilename = imageFilename; }
 
+    public Integer getStockQuantity() { return stockQuantity; }
+    public void setStockQuantity(Integer stockQuantity) { this.stockQuantity = stockQuantity; }
+
+    public Boolean getIsAvailable() { return isAvailable; }
+    public void setIsAvailable(Boolean isAvailable) { this.isAvailable = isAvailable; }
+
+    // Геттер и сеттер для поля favorite
     public Boolean getFavorite() { return favorite; }
     public void setFavorite(Boolean favorite) { this.favorite = favorite; }
+
+    // Удобный метод для получения полного пути к изображению
+    public String getImageUrl() {
+        return "/images.products/" + imageFilename;
+    }
 }

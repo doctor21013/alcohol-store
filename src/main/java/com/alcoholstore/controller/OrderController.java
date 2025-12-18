@@ -1,14 +1,16 @@
 package com.alcoholstore.controller;
 
+import com.alcoholstore.model.Cart;
 import com.alcoholstore.model.Order;
 import com.alcoholstore.service.CartService;
 import com.alcoholstore.service.OrderService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -25,22 +27,21 @@ public class OrderController {
     // ========== МОИ ЗАКАЗЫ ==========
     @GetMapping
     public String myOrders(HttpSession session, Model model) {
-        // Проверяем авторизацию через сессию
-        if (session.getAttribute("userEmail") == null) {
+        // Проверяем авторизацию через Spring Security
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return "redirect:/login";
         }
 
-        String userEmail = (String) session.getAttribute("userEmail");
-        List<Order> orders = orderService.getOrdersByEmail(userEmail);
+        String username = auth.getName();
+        List<Order> orders = orderService.getOrdersByUsername(username);
 
         model.addAttribute("orders", orders);
         model.addAttribute("loggedIn", true);
-        model.addAttribute("userName", session.getAttribute("userName"));
-        model.addAttribute("userEmail", userEmail);
+        model.addAttribute("userName", username);
 
-        // Количество товаров в корзине
-        String sessionId = cartService.getOrCreateSessionId(session);
-        model.addAttribute("cartItemsCount", cartService.getCartItemsCount(sessionId));
+        // Количество товаров в корзине через новый CartService
+        model.addAttribute("cartItemsCount", cartService.getCartItemCount(session));
 
         return "orders";
     }
@@ -49,24 +50,23 @@ public class OrderController {
     @GetMapping("/checkout")
     public String checkout(HttpSession session, Model model) {
         // Проверяем авторизацию
-        if (session.getAttribute("userEmail") == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return "redirect:/login";
         }
 
-        String sessionId = cartService.getOrCreateSessionId(session);
-        var cartItems = cartService.getCartItems(sessionId);
-        BigDecimal totalPrice = cartService.getTotalPrice(sessionId);
+        // Получаем корзину из нового CartService
+        Cart cart = cartService.getCurrentCart(session);
 
         // Если корзина пуста
-        if (cartItems.isEmpty()) {
+        if (cart == null || cart.getItems().isEmpty()) {
             return "redirect:/cart";
         }
 
-        model.addAttribute("cartItems", cartItems);
-        model.addAttribute("totalPrice", totalPrice);
-        model.addAttribute("userName", session.getAttribute("userName"));
-        model.addAttribute("userEmail", session.getAttribute("userEmail"));
-        model.addAttribute("userPhone", session.getAttribute("userPhone")); // Добавляем телефон из сессии
+        model.addAttribute("cart", cart);
+        model.addAttribute("cartItems", cart.getItems());
+        model.addAttribute("totalPrice", BigDecimal.valueOf(cart.getTotalPrice()));
+        model.addAttribute("userName", auth.getName());
         model.addAttribute("loggedIn", true);
 
         return "checkout";
@@ -83,24 +83,22 @@ public class OrderController {
                              Model model) {
 
         // Проверяем авторизацию
-        if (session.getAttribute("userEmail") == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (!auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return "redirect:/login";
         }
 
-        String sessionId = cartService.getOrCreateSessionId(session);
-        BigDecimal totalAmount = cartService.getTotalPrice(sessionId);
-
-        // Проверяем, что корзина не пуста
-        var cartItems = cartService.getCartItems(sessionId);
-        if (cartItems.isEmpty()) {
+        // Получаем корзину
+        Cart cart = cartService.getCurrentCart(session);
+        if (cart == null || cart.getItems().isEmpty()) {
             model.addAttribute("error", "Корзина пуста");
             return "redirect:/cart";
         }
 
         try {
-            // Создаем заказ
+            // Создаем заказ через новый метод OrderService
             Order order = orderService.createOrderFromCart(
-                    sessionId,
+                    cart,
                     customerName,
                     customerEmail,
                     customerPhone,
@@ -109,11 +107,11 @@ public class OrderController {
             );
 
             // Очищаем корзину
-            cartService.clearCart(sessionId);
+            cartService.clearCart(session);
 
             // Сохраняем номер заказа для страницы успеха
             session.setAttribute("lastOrderNumber", order.getId());
-            session.setAttribute("lastOrderTotal", totalAmount);
+            session.setAttribute("lastOrderTotal", order.getTotalAmount());
 
             return "redirect:/orders/success";
 

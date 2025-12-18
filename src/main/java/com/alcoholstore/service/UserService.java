@@ -2,105 +2,79 @@ package com.alcoholstore.service;
 
 import com.alcoholstore.model.User;
 import com.alcoholstore.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    // Найти пользователя по имени пользователя
+    public Optional<User> findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 
-    @Transactional
-    public User registerNewUser(String username, String email, String password, String confirmPassword) {
-        if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Пользователь с таким именем уже существует");
-        }
-
-        if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Пользователь с таким email уже существует");
-        }
-
-        if (!password.equals(confirmPassword)) {
-            throw new RuntimeException("Пароли не совпадают");
-        }
-
-        User user = new User();
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setPassword(password);
-        user.setIsAdmin(false);
-        user.setFullName("");
-        user.setPhone("");
-
-        return userRepository.save(user);
+    // Найти пользователя по email
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
-    }
-
+    // Получить пользователя по ID
     public Optional<User> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
+    // Получить пользователя по ID или выбросить исключение
     public User getUserByIdOrThrow(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Пользователь не найден"));
+                .orElseThrow(() -> new RuntimeException("Пользователь не найден с ID: " + id));
     }
 
-    public User findByUserId(Long id) {
-        return getUserByIdOrThrow(id);
-    }
-
-    public boolean existsByUsername(String username) {
-        return userRepository.existsByUsername(username);
-    }
-
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
-
-    public User saveUser(User user) {
-        return userRepository.save(user);
-    }
-
+    // Получить всех пользователей
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
+    // Сохранить пользователя
+    public User saveUser(User user) {
+        // Если это новый пользователь и пароль не зашифрован, шифруем его
+        if (user.getId() == null && user.getPassword() != null &&
+                !user.getPassword().startsWith("$2a$")) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        return userRepository.save(user);
+    }
+
+    // Получить общее количество пользователей
     public long getTotalUsersCount() {
         return userRepository.count();
     }
 
-    public User updateUser(Long userId, User updatedUser) {
-        User existingUser = getUserByIdOrThrow(userId);
+    // Проверить существование пользователя по email
+    public boolean existsByEmail(String email) {
+        return userRepository.existsByEmail(email);
+    }
 
-        if (updatedUser.getUsername() != null) {
-            existingUser.setUsername(updatedUser.getUsername());
-        }
-        if (updatedUser.getEmail() != null) {
-            existingUser.setEmail(updatedUser.getEmail());
-        }
-        if (updatedUser.getPassword() != null) {
-            existingUser.setPassword(updatedUser.getPassword());
-        }
-        if (updatedUser.getFullName() != null) {
-            existingUser.setFullName(updatedUser.getFullName());
-        }
-        if (updatedUser.getPhone() != null) {
-            existingUser.setPhone(updatedUser.getPhone());
-        }
-        if (updatedUser.getIsAdmin() != null) {
-            existingUser.setIsAdmin(updatedUser.getIsAdmin());
-        }
+    // Проверить существование пользователя по username
+    public boolean existsByUsername(String username) {
+        return userRepository.existsByUsername(username);
+    }
 
-        return userRepository.save(existingUser);
+    // Удалить пользователя
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    // Получить пользователя по имени пользователя (синоним для findByUsername)
+    public Optional<User> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }

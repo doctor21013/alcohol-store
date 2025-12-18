@@ -36,38 +36,10 @@ public class ProductController {
         }
 
         Product product = productOpt.get();
-
-        // Проверяем авторизацию
-        Object userObj = session.getAttribute("user");
-        if (userObj != null) {
-            product.setFavorite(false);
-        }
-
         model.addAttribute("product", product);
-        model.addAttribute("loggedIn", userObj != null);
-
-        if (userObj != null) {
-            model.addAttribute("userName", session.getAttribute("username"));
-        }
-
-        // Получаем отзывы и рейтинг для товара
-        try {
-            Double averageRating = reviewService.getProductAverageRating(id);
-            Long reviewCount = reviewService.getProductReviewCount(id);
-            var reviews = reviewService.getProductReviews(id);
-
-            model.addAttribute("averageRating", averageRating);
-            model.addAttribute("reviewCount", reviewCount);
-            model.addAttribute("reviews", reviews);
-        } catch (Exception e) {
-            model.addAttribute("averageRating", 0.0);
-            model.addAttribute("reviewCount", 0);
-            model.addAttribute("reviews", List.of());
-        }
 
         // Количество товаров в корзине
-        String sessionId = cartService.getOrCreateSessionId(session);
-        model.addAttribute("cartItemsCount", cartService.getCartItemsCount(sessionId));
+        model.addAttribute("cartItemsCount", cartService.getCartItemCount(session));
 
         return "product-detail";
     }
@@ -81,35 +53,24 @@ public class ProductController {
         model.addAttribute("searchQuery", query);
         model.addAttribute("searchResultsCount", searchResults.size());
 
-        Object userObj = session.getAttribute("user");
-        model.addAttribute("loggedIn", userObj != null);
-
-        if (userObj != null) {
-            model.addAttribute("userName", session.getAttribute("username"));
-        }
-
-        String sessionId = cartService.getOrCreateSessionId(session);
-        model.addAttribute("cartItemsCount", cartService.getCartItemsCount(sessionId));
+        // Количество товаров в корзине
+        model.addAttribute("cartItemsCount", cartService.getCartItemCount(session));
 
         return "catalog";
     }
 
-    // УДАЛЕНО: ФИЛЬТРАЦИЯ ПО КАТЕГОРИИ (удали весь метод filterByCategory)
-
     // ========== ДОБАВЛЕНИЕ В КОРЗИНУ (через POST) ==========
-    @PostMapping("/cart/add")
+    @PostMapping("/products/add-to-cart")
     public String addToCart(@RequestParam Long productId,
                             @RequestParam(defaultValue = "1") Integer quantity,
                             HttpSession session,
                             RedirectAttributes redirectAttributes) {
 
-        String sessionId = cartService.getOrCreateSessionId(session);
-
         try {
-            cartService.addToCart(sessionId, productId, quantity);
-            redirectAttributes.addFlashAttribute("successMessage", "Товар добавлен в корзину");
+            cartService.addToCart(session, productId, quantity);
+            redirectAttributes.addFlashAttribute("success", "Товар добавлен в корзину");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при добавлении в корзину: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Ошибка при добавлении в корзину: " + e.getMessage());
         }
 
         return "redirect:/product/" + productId;
@@ -122,13 +83,11 @@ public class ProductController {
                                  HttpSession session,
                                  RedirectAttributes redirectAttributes) {
 
-        String sessionId = cartService.getOrCreateSessionId(session);
-
         try {
-            cartService.addToCart(sessionId, productId, quantity);
-            redirectAttributes.addFlashAttribute("successMessage", "Товар добавлен в корзину");
+            cartService.addToCart(session, productId, quantity);
+            redirectAttributes.addFlashAttribute("success", "Товар добавлен в корзину");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Ошибка при добавлении в корзину: " + e.getMessage());
+            redirectAttributes.addFlashAttribute("error", "Ошибка при добавлении в корзину: " + e.getMessage());
         }
 
         return "redirect:/catalog";

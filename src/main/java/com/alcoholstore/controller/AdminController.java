@@ -138,11 +138,12 @@ public class AdminController {
                                 @RequestParam String name,
                                 @RequestParam String description,
                                 @RequestParam BigDecimal price,
-                                @RequestParam(required = false) Double alcoholContent,
-                                @RequestParam(required = false) String countryOfOrigin,
+                                @RequestParam String category, // Добавлен параметр категории
+                                @RequestParam(required = false) Double alcoholPercentage, // Изменено с alcoholContent
+                                @RequestParam(required = false) String country, // Изменено с countryOfOrigin
                                 @RequestParam(required = false) Integer volumeMl,
-                                @RequestParam(required = false) Integer inStock,
-                                @RequestParam(required = false) String imageUrl,
+                                @RequestParam(required = false) Integer stockQuantity, // Изменено с inStock
+                                @RequestParam(required = false) String imageFilename, // Изменено с imageUrl
                                 HttpSession session,
                                 RedirectAttributes redirectAttributes) {
         if (!checkAdmin(session)) {
@@ -157,11 +158,12 @@ public class AdminController {
             product.setName(name);
             product.setDescription(description);
             product.setPrice(price);
-            product.setAlcoholContent(alcoholContent);
-            product.setCountryOfOrigin(countryOfOrigin);
+            product.setCategory(category); // Добавлено
+            product.setAlcoholPercentage(alcoholPercentage); // Исправлено
+            product.setCountry(country); // Исправлено
             product.setVolumeMl(volumeMl);
-            product.setInStock(inStock != null ? inStock : 0);
-            product.setImageUrl(imageUrl);
+            product.setStockQuantity(stockQuantity != null ? stockQuantity : 0); // Исправлено
+            product.setImageFilename(imageFilename); // Исправлено
 
             productService.saveProduct(product);
 

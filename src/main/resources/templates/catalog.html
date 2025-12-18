@@ -1,108 +1,352 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Каталог</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <title>Каталог товаров | Alcohol Store</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        .favorite-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 10;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #e74c3c;
+            --accent-color: #3498db;
+            --light-bg: #f8f9fa;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light-bg);
+            padding-top: 80px;
+        }
+
+        .category-btn {
+            transition: all 0.3s;
+            margin: 5px;
+        }
+
+        .category-btn:hover, .category-btn.active {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: none;
+            margin-bottom: 25px;
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+
+        .product-img-container {
+            height: 250px;
+            overflow: hidden;
+            background-color: #f5f5f5;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .product-img {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+            padding: 10px;
+        }
+
+        .product-category {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(44, 62, 80, 0.9);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .product-price {
+            color: var(--secondary-color);
+            font-weight: 700;
+            font-size: 1.4rem;
+        }
+
+        .product-volume {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .product-alcohol {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+
+        .product-country {
+            display: inline-block;
+            padding: 2px 10px;
+            background: #e8f4fc;
+            color: var(--accent-color);
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+
+        .btn-add-to-cart {
+            background: linear-gradient(135deg, var(--secondary-color), #c0392b);
+            color: white;
             border: none;
-            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s;
+            width: 100%;
         }
-        .favorite-btn:hover {
+
+        .btn-add-to-cart:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+            color: white;
+        }
+
+        .stock-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+        }
+
+        .search-box {
+            max-width: 500px;
+            margin: 0 auto 30px;
+        }
+
+        .results-info {
             background: white;
-            transform: scale(1.1);
-        }
-        .product-card {
-            transition: transform 0.3s;
-        }
-        .product-card:hover {
-            transform: translateY(-5px);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
         }
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<!-- Навигационная панель (такая же как на главной) -->
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background-color: var(--primary-color);">
     <div class="container">
-        <a class="navbar-brand" href="/">🍷 Alcohol Store</a>
+        <a class="navbar-brand" href="/">
+            <i class="fas fa-wine-bottle me-2"></i>Alcohol Store
+        </a>
 
-        <div class="navbar-nav ms-auto">
-            <div sec:authorize="isAuthenticated()">
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-person-circle"></i>
-                        <span sec:authentication="name"></span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="/orders">Мои заказы</a></li>
-                        <li><a class="dropdown-item" href="/favorites">Избранное</a></li>
-                        <li sec:authorize="hasRole('ADMIN')">
-                            <a class="dropdown-item text-warning" href="/admin/dashboard">
-                                <i class="bi bi-shield-check"></i> Админ-панель
-                            </a>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <form th:action="@{/logout}" method="post" class="d-inline">
-                                <button type="submit" class="dropdown-item text-danger">
-                                    <i class="bi bi-box-arrow-right"></i> Выйти
-                                </button>
-                            </form>
-                        </li>
-                    </ul>
-                </div>
-                <a href="/cart" class="btn btn-outline-light ms-2">
-                    🛒 Корзина
-                </a>
-            </div>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="/">Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/catalog">Каталог</a>
+                </li>
+            </ul>
 
-            <div sec:authorize="!isAuthenticated()">
-                <a href="/login" class="btn btn-outline-light me-2">Войти</a>
-                <a href="/register" class="btn btn-primary">Регистрация</a>
+            <div class="d-flex align-items-center">
+                    <span sec:authorize="isAuthenticated()">
+                        <span class="text-white me-3">
+                            <i class="fas fa-user me-1"></i>
+                            <span sec:authentication="name"></span>
+                        </span>
+                        <a href="/cart" class="btn btn-outline-light me-2">
+                            <i class="fas fa-shopping-cart"></i>
+                        </a>
+                        <a href="/logout" class="btn btn-outline-light">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </a>
+                    </span>
+
+                <span sec:authorize="!isAuthenticated()">
+                        <a href="/login" class="btn btn-outline-light me-2">Войти</a>
+                        <a href="/register" class="btn btn-light" style="color: var(--primary-color);">Регистрация</a>
+                    </span>
             </div>
         </div>
     </div>
 </nav>
 
-<div class="container mt-4">
-    <h1>Каталог напитков</h1>
+<!-- Основной контент -->
+<div class="container py-4">
+    <!-- Заголовок и поиск -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="display-5 fw-bold mb-3">Каталог напитков</h1>
+            <p class="lead text-muted mb-4">Выберите из нашей коллекции премиальных алкогольных напитков</p>
 
-    <div class="row">
-        <div th:each="product : ${products}" class="col-md-4 mb-4">
-            <div class="card product-card h-100">
-                <div class="position-relative">
-                    <img th:src="${product.imageUrl}" class="card-img-top" style="height: 200px; object-fit: cover;">
+            <!-- Поиск -->
+            <form action="/catalog" method="get" class="search-box">
+                <div class="input-group">
+                    <input type="text" class="form-control form-control-lg"
+                           name="search" placeholder="Найти напиток..."
+                           th:value="${searchQuery}">
+                    <button class="btn btn-primary btn-lg" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <a href="/catalog" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
 
-                    <!-- Кнопка избранного -->
-                    <button class="favorite-btn"
-                            data-product-id="${product.id}"
-                            onclick="toggleFavorite(this)">
-                        <i class="bi bi-heart"></i>
+    <!-- Информация о результатах -->
+    <div class="row mb-4" th:if="${searchQuery} or ${selectedCategory}">
+        <div class="col-12">
+            <div class="results-info">
+                    <span th:if="${searchQuery}">
+                        <i class="fas fa-search me-2"></i>Результаты поиска для:
+                        <strong th:text="${searchQuery}"></strong>
+                    </span>
+                <span th:if="${selectedCategory}">
+                        <i class="fas fa-filter me-2"></i>Категория:
+                        <strong th:text="${selectedCategory}"></strong>
+                    </span>
+                <span class="ms-3">
+                        Найдено товаров: <strong th:text="${#lists.size(products)}"></strong>
+                    </span>
+                <a href="/catalog" class="btn btn-sm btn-outline-primary float-end">
+                    Сбросить фильтры
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Категории -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="d-flex flex-wrap justify-content-center">
+                <a href="/catalog"
+                   class="btn btn-outline-primary category-btn"
+                   th:classappend="${selectedCategory == null} ? 'active' : ''">
+                    Все товары
+                </a>
+                <a th:each="cat : ${categories}"
+                   th:href="@{/catalog(category=${cat})}"
+                   class="btn btn-outline-primary category-btn"
+                   th:classappend="${selectedCategory == cat} ? 'active' : ''"
+                   th:text="${cat}">
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список товаров -->
+    <div class="row" th:if="${not #lists.isEmpty(products)}">
+        <div th:each="product : ${products}" class="col-lg-3 col-md-4 col-sm-6 mb-4">
+            <div class="product-card h-100">
+                <div class="product-img-container position-relative">
+                    <span class="product-category" th:text="${product.category}"></span>
+
+                    <th:block th:if="${product.stockQuantity > 5}">
+                            <span class="stock-badge badge bg-success">
+                                <i class="fas fa-check"></i> В наличии
+                            </span>
+                    </th:block>
+                    <th:block th:if="${product.stockQuantity <= 5 and product.stockQuantity > 0}">
+                            <span class="stock-badge badge bg-warning">
+                                <i class="fas fa-exclamation"></i> Мало
+                            </span>
+                    </th:block>
+                    <th:block th:if="${product.stockQuantity == 0}">
+                            <span class="stock-badge badge bg-danger">
+                                <i class="fas fa-times"></i> Нет в наличии
+                            </span>
+                    </th:block>
+
+                    <img th:src="${product.imageUrl}"
+                         th:alt="${product.name}"
+                         class="product-img">
+                </div>
+
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title" th:text="${product.name}"></h5>
+
+                    <div class="mb-2">
+                        <span class="product-country" th:text="${product.country}"></span>
+                    </div>
+
+                    <p class="card-text text-muted small flex-grow-1"
+                       th:text="${product.description}">
+                    </p>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                                <span class="product-alcohol"
+                                      th:text="${product.alcoholPercentage} + '%'"></span>
+                            <span class="product-volume ms-2"
+                                  th:text="${product.volumeMl} + ' мл'"></span>
+                        </div>
+                        <div class="product-price"
+                             th:text="${#numbers.formatDecimal(product.price, 0, 'COMMA', 2, 'POINT') + ' ₽'}">
+                        </div>
+                    </div>
+
+                    <button class="btn btn-add-to-cart mt-auto"
+                            th:disabled="${product.stockQuantity == 0}">
+                        <i class="fas fa-cart-plus me-2"></i>
+                        <span th:if="${product.stockQuantity > 0}">В корзину</span>
+                        <span th:if="${product.stockQuantity == 0}">Нет в наличии</span>
                     </button>
                 </div>
-                <div class="card-body d-flex flex-column">
-                    <h5 th:text="${product.name}"></h5>
-                    <p class="card-text flex-grow-1" th:text="${product.description} ?: 'Нет описания'"></p>
-                    <p><strong th:text="${product.price} + ' ₽'"></strong></p>
-                    <div class="mt-auto">
-                        <form th:action="@{/cart/add/{id}(id=${product.id})}" method="post">
-                            <input type="hidden" name="quantity" value="1">
-                            <button type="submit" class="btn btn-primary">В корзину</button>
-                        </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Если товаров нет -->
+    <div class="row" th:if="${#lists.isEmpty(products)}">
+        <div class="col-12 text-center py-5">
+            <div class="empty-state">
+                <i class="fas fa-search fa-4x text-muted mb-4"></i>
+                <h3>Товары не найдены</h3>
+                <p class="text-muted mb-4">Попробуйте изменить критерии поиска или выберите другую категорию</p>
+                <a href="/catalog" class="btn btn-primary">
+                    <i class="fas fa-redo me-2"></i>Показать все товары
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h4 class="fw-bold" th:text="${#lists.size(products)}">13</h4>
+                        <p class="mb-0">Всего товаров</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="fw-bold" th:text="${#lists.size(categories)}">7</h4>
+                        <p class="mb-0">Категорий</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="fw-bold">13</h4>
+                        <p class="mb-0">Изображений</p>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="fw-bold">
+                            <i class="fas fa-check-circle text-success"></i>
+                        </h4>
+                        <p class="mb-0">База загружена</p>
                     </div>
                 </div>
             </div>
@@ -110,93 +354,100 @@
     </div>
 </div>
 
+<!-- Футер -->
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <h5><i class="fas fa-wine-bottle me-2"></i>Alcohol Store</h5>
+                <p class="mb-0">© 2025 Все права защищены</p>
+            </div>
+            <div class="col-md-6 text-end">
+                <p class="mb-0">
+                        <span sec:authorize="isAuthenticated()">
+                            Вы вошли как: <strong sec:authentication="name"></strong>
+                        </span>
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-    // Функция для переключения состояния избранного
-    function toggleFavorite(button) {
-        const productId = button.getAttribute('data-product-id');
-        const icon = button.querySelector('i');
+    // Обработка добавления в корзину
+    document.querySelectorAll('.btn-add-to-cart').forEach(button => {
+        button.addEventListener('click', function() {
+            const productCard = this.closest('.product-card');
+            const productName = productCard.querySelector('.card-title').textContent;
+            const productPrice = productCard.querySelector('.product-price').textContent;
 
-        // Проверяем текущее состояние
-        const isFavorite = icon.classList.contains('bi-heart-fill');
+            if(this.disabled) return;
 
-        if (isFavorite) {
-            // Удаляем из избранного
-            fetch('/favorites/remove/' + productId, {
-                method: 'POST'
-            })
-            .then(response => {
-                if (response.redirected) {
-                    window.location.href = '/login';
-                    return;
-                }
-                if (response.ok) {
-                    icon.classList.remove('bi-heart-fill', 'text-danger');
-                    icon.classList.add('bi-heart', 'text-muted');
-                } else {
-                    alert('Ошибка при удалении из избранного');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка');
-            });
-        } else {
-            // Добавляем в избранное (используем FormData)
-            const formData = new FormData();
-            formData.append('productId', productId);
+            // Анимация
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Добавляем...';
+            this.disabled = true;
 
-            fetch('/favorites/add', {
-                method: 'POST',
-                body: new URLSearchParams({
-                    'productId': productId
-                }),
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                }
-            })
-            .then(response => response.text())
-            .then(result => {
-                if (result === 'success') {
-                    icon.classList.remove('bi-heart', 'text-muted');
-                    icon.classList.add('bi-heart-fill', 'text-danger');
-                } else if (result.startsWith('error:not_logged_in')) {
-                    window.location.href = '/login';
-                } else {
-                    alert('Ошибка при добавлении в избранное');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Произошла ошибка соединения');
-            });
-        }
+            setTimeout(() => {
+                this.innerHTML = '<i class="fas fa-check me-2"></i>Добавлено!';
+                this.classList.remove('btn-primary');
+                this.classList.add('btn-success');
+
+                // Показать уведомление
+                showNotification(productName, productPrice);
+
+                // Вернуть исходное состояние через 2 секунды
+                setTimeout(() => {
+                    this.innerHTML = '<i class="fas fa-cart-plus me-2"></i>В корзину';
+                    this.disabled = false;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-primary');
+                }, 2000);
+            }, 800);
+        });
+    });
+
+    function showNotification(name, price) {
+        // Создаем временное уведомление
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success position-fixed';
+        notification.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        `;
+        notification.innerHTML = `
+            <strong>Добавлено в корзину!</strong><br>
+            ${name}<br>
+            <small>${price}</small>
+        `;
+
+        document.body.appendChild(notification);
+
+        // Удаляем через 3 секунды
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 
-    // Инициализация при загрузке страницы
+    // Анимация при загрузке
     document.addEventListener('DOMContentLoaded', function() {
-        // Проверяем статус избранного для всех товаров на странице
-        const favoriteButtons = document.querySelectorAll('.favorite-btn');
+        const cards = document.querySelectorAll('.product-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
 
-        favoriteButtons.forEach(button => {
-            const productId = button.getAttribute('data-product-id');
-            const icon = button.querySelector('i');
-
-            fetch('/favorites/check?productId=' + productId)
-                .then(response => response.text())
-                .then(status => {
-                    if (status === 'favorite') {
-                        icon.classList.remove('bi-heart', 'text-muted');
-                        icon.classList.add('bi-heart-fill', 'text-danger');
-                    } else if (status === 'not_favorite') {
-                        icon.classList.remove('bi-heart-fill', 'text-danger');
-                        icon.classList.add('bi-heart', 'text-muted');
-                    }
-                })
-                .catch(error => console.error('Error checking favorite:', error));
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
         });
     });
 </script>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
